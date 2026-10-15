@@ -26,7 +26,8 @@ with tempfile.TemporaryDirectory(prefix='tickreel-release-') as temporary:
     result = subprocess.run([str(executable), '--check-update'], capture_output=True, text=True, encoding='utf-8', check=True, timeout=40)
     assert json.loads(result.stdout)['phase'] == 'current', result.stdout
     encoders = subprocess.check_output([str(installed / 'ffmpeg.exe'), '-hide_banner', '-encoders'], text=True, stderr=subprocess.STDOUT)
-    for name in ('libx264', 'libvpx-vp9', 'pcm_s16le', 'libmp3lame', 'flac', 'aac', 'libvorbis'):
+    print(encoders, flush=True)
+    for name in ('libx264', 'libaom-av1', 'pcm_s16le', 'libmp3lame', 'flac', 'aac', 'libvorbis'):
         assert name in encoders, name
     filters = subprocess.check_output([str(installed / 'ffmpeg.exe'), '-hide_banner', '-filters'], text=True, stderr=subprocess.STDOUT)
     assert ' ass ' in filters
