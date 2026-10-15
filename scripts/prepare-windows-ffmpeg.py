@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 import struct
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -45,5 +46,10 @@ offset = struct.unpack_from('<I', binary, 0x3c)[0]
 machine = struct.unpack_from('<H', binary, offset + 4)[0]
 assert machine == {'x64': 0x8664, 'x86': 0x14c, 'arm64': 0xaa64}[arch], hex(machine)
 (destination / 'ffmpeg.exe').write_bytes(binary)
+encoders = subprocess.check_output([str(destination / 'ffmpeg.exe'), '-hide_banner', '-encoders'], text=True, stderr=subprocess.STDOUT)
+for encoder in ('libx264', 'libvpx-vp9', 'pcm_s16le', 'libmp3lame', 'flac', 'aac', 'libvorbis'):
+    assert encoder in encoders, f'Missing encoder: {encoder}'
+filters = subprocess.check_output([str(destination / 'ffmpeg.exe'), '-hide_banner', '-filters'], text=True, stderr=subprocess.STDOUT)
+assert ' ass ' in filters, 'Caption rendering is unavailable'
 (notices / 'source.json').write_text(json.dumps({'url': url, 'sha256': hashlib.sha256(binary).hexdigest()}, indent=2))
 print(f'Prepared native {arch} FFmpeg')

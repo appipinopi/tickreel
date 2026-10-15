@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import os
+import struct
 from pathlib import Path
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -22,6 +23,9 @@ public = key.public_key().public_bytes(serialization.Encoding.Raw, serialization
 assert public == (Path(__file__).resolve().parent.parent / "assets/update-public-key.bin").read_bytes(), "Signing key does not match the application public key"
 data = args.executable.read_bytes()
 assert data[:2] == b"MZ", "Expected a Windows executable"
+pe_offset = struct.unpack_from('<I', data, 0x3c)[0]
+assert data[pe_offset:pe_offset + 4] == b'PE\x00\x00', 'Invalid PE executable'
+assert struct.unpack_from('<H', data, pe_offset + 4)[0] == {'x64': 0x8664, 'x86': 0x14c, 'arm64': 0xaa64}[args.arch], 'Executable architecture does not match the update channel'
 assert args.version and all(c.isdigit() or c == "." for c in args.version)
 filename = f"Tickreel-{args.version}-windows-{args.arch}-portable.exe"
 value = dict(version=args.version,
