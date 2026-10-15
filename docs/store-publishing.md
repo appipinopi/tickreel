@@ -9,7 +9,10 @@
 Microsoft Storeは初回公開をPartner Centerで完了してからSubmission APIによる更新を使います。
 MSIXのアップロード、商品情報、年齢区分、審査などの初回手続きを済ませてください。
 ローカルMSIXはStore提出用の未署名パッケージです。
-Snapは登録済みですが、認証情報を設定してアップロードするまでは公開リビジョンはありません。
+Microsoft Storeの初回提出は2026-10-15に審査へ提出済みです。審査通過後に自動公開される設定です。
+Snapの配布用認証情報はGitHub Secretsへ設定済みです。配布先は`TICKREEL_SNAP_CHANNEL=edge`で、認証情報の有効期限は約90日です。
+2026-10-15にSnap Storeへ`1.0.0`（amd64、リビジョン1）をアップロードし、`latest/edge`へ公開しました。
+導入は`sudo snap install tickreel --edge`、以後はsnapdが同じチャンネルの更新を管理します。
 
 ## 新版からの自動配布
 
