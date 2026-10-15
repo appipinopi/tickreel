@@ -36,11 +36,11 @@ npm install --no-save --package-lock=false ffmpeg-static@5.3.0
 bash scripts/build-unix.sh
 ```
 
-tar.gzはGTK 3・WebKitGTK 4.1・ALSA・X11関連の実行時ライブラリを利用します。依存なしの形式ではありません。リリース用はUbuntu 24.04上でビルドします。
+tar.gzはGTK 3・WebKitGTK 4.1・ALSA・X11関連の実行時ライブラリを利用します。依存なしの形式ではありません。リリース用はUbuntu 24.04上でビルドします。Linuxのロック検知はX11 Screen Saver拡張に基づき、デスクトップ環境ごとの連動は実機での確認が必要です。macOS・Linuxでの自動スリープ抑止は未実装です。
 
 ## Snap
 
-publisher `appipinopi` に名前 `tickreel` を登録済みです。公開リビジョンはまだありません。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。
+publisher `appipinopi` に名前 `tickreel` を登録済みです。公開リビジョンはまだありません。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。GitHub Releasesの検証済みLinuxパッケージをSHA-256で照合して取り込みます。新版を配信する際は、source URL・checksum・versionを一緒に更新してください。
 
 ```sh
 snapcraft
