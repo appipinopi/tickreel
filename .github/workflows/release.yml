@@ -12,22 +12,20 @@ on:
         description: 'Reuse native payload artifacts from a completed run (empty = rebuild)'
         required: false
         default: ''
+      arm64_only:
+        description: 'Rebuild ARM64 and reuse x64/x86 from payload_run'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   build:
-    if: inputs.payload_run == ''
+    if: inputs.payload_run == '' || inputs.arm64_only
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-          - arch: x86
-            runner: windows-latest
-          - arch: arm64
-            runner: windows-11-arm
-    runs-on: ${{ matrix.runner }}
+        arch: ${{ inputs.arm64_only && fromJSON('["arm64"]') || fromJSON('["x64", "x86", "arm64"]') }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -66,6 +64,11 @@ jobs:
           merge-multiple: true
           run-id: ${{ inputs.payload_run || github.run_id }}
           github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        if: inputs.arm64_only && inputs.payload_run != ''
+        with:
+          name: windows-payload-arm64
+          path: dist
       - name: Install NSIS
         run: choco install nsis --no-progress -y
       - name: Build installers

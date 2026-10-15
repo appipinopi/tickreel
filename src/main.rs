@@ -19,6 +19,14 @@ mod web_ui;
 
 fn main() {
     native::set_dpi();
+    if std::env::args().any(|arg| arg == "--export-self-test") {
+        if let Err(error) = engine::export_self_test() {
+            eprintln!("{error:#}");
+            std::process::exit(1);
+        }
+        println!("PASS: captions, narration, music, 12 export formats and summaries");
+        return;
+    }
     if std::env::args().any(|arg| arg == "--check-update") {
         match updater::Updater::new().check() {
             Ok(status) => println!("{}", serde_json::to_string(&status).unwrap()),

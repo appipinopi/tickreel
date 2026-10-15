@@ -375,8 +375,12 @@ pub fn generate(
     }
     if !audio_only && !gif {
         if format == "webm" {
-            args.extend(
-                [
+            // The native Windows ARM64 FFmpeg distribution uses SVT-AV1;
+            // WebM supports both AV1 and the VP9 used by the other builds.
+            let video_options = if cfg!(all(windows, target_arch = "aarch64")) {
+                vec!["-c:v", "libsvtav1", "-crf", "32", "-preset", "12"]
+            } else {
+                vec![
                     "-c:v",
                     "libvpx-vp9",
                     "-crf",
@@ -388,9 +392,8 @@ pub fn generate(
                     "-cpu-used",
                     "6",
                 ]
-                .into_iter()
-                .map(str::to_owned),
-            );
+            };
+            args.extend(video_options.into_iter().map(str::to_owned));
         } else {
             args.extend(
                 ["-c:v", "libx264", "-preset", "fast", "-crf", "20"]

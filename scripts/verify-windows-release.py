@@ -27,10 +27,13 @@ with tempfile.TemporaryDirectory(prefix='tickreel-release-') as temporary:
     assert json.loads(result.stdout)['phase'] == 'current', result.stdout
     encoders = subprocess.check_output([str(installed / 'ffmpeg.exe'), '-hide_banner', '-encoders'], text=True, stderr=subprocess.STDOUT)
     print(encoders, flush=True)
-    for name in ('libx264', 'libaom-av1', 'pcm_s16le', 'libmp3lame', 'flac', 'aac', 'libvorbis'):
+    for name in ('libx264', 'libsvtav1', 'pcm_s16le', 'libmp3lame', 'flac', 'aac', 'libopus'):
         assert name in encoders, name
     filters = subprocess.check_output([str(installed / 'ffmpeg.exe'), '-hide_banner', '-filters'], text=True, stderr=subprocess.STDOUT)
     assert ' ass ' in filters
+    result = subprocess.run([str(executable), '--export-self-test'], capture_output=True, text=True, encoding='utf-8', timeout=300)
+    print(result.stdout, result.stderr, flush=True)
+    assert result.returncode == 0 and '12 export formats' in result.stdout
     keep = installed / 'keep-user-data.txt'
     keep.write_text('keep')
     subprocess.run([str(installed / 'Uninstall.exe'), '/S'], check=True, timeout=90)

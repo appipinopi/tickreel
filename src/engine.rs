@@ -448,14 +448,29 @@ pub fn capture_record(record: &Recording) -> Result<RgbImage> {
     native::compose(&images, record.layout == "horizontal")
 }
 pub fn self_test() -> Result<()> {
-    let monitors = native::monitors()?;
-    for monitor in &monitors {
-        anyhow::ensure!(
-            !native::capture(monitor)?.is_empty(),
-            "画面取得に失敗しました。"
-        );
-    }
-    native::windows()?;
+    self_test_impl(true)
+}
+pub fn export_self_test() -> Result<()> {
+    self_test_impl(false)
+}
+fn self_test_impl(capture_desktop: bool) -> Result<()> {
+    let source_id = if capture_desktop {
+        let monitors = native::monitors()?;
+        for monitor in &monitors {
+            anyhow::ensure!(
+                !native::capture(monitor)?.is_empty(),
+                "画面取得に失敗しました。"
+            );
+        }
+        native::windows()?;
+        monitors
+            .first()
+            .context("記録できるモニターがありません。")?
+            .id
+            .clone()
+    } else {
+        "synthetic-export-test".into()
+    };
     let root = tempfile::tempdir()?;
     let store = Store::new(root.path().join("records"))?;
     let mut secret = RgbImage::from_pixel(100, 100, Rgb([255, 255, 255]));
@@ -487,7 +502,7 @@ pub fn self_test() -> Result<()> {
     let mut record = Recording {
         title: "Rust版の検証".into(),
         category: "development".into(),
-        source_ids: vec![monitors[0].id.clone()],
+        source_ids: vec![source_id],
         active_ms: 3_600_000,
         idle_ms: 600_000,
         ..Default::default()
