@@ -6,7 +6,7 @@
     await until(()=>sources.length>0); await update();
     assert(document.querySelector('.sidebar')!==null,'original sidebar');
     assert(getComputedStyle(document.querySelector('.sidebar')).width==='230px','original sidebar geometry');
-    assert(document.getElementById('title-input')!==null,'original recording controls');
+    assert(document.getElementById('title-input')!==null,'original recording controls');const updater=await api.updateState();assert(updater.current==='1.0.0'&&['github','store'].includes(updater.channel),'Native updater status');assert(document.getElementById('update-check')!==null,'Updater controls');if(window.location.hash.includes('update')){await update();document.getElementById('toast').hidden=true;window.ipc.postMessage(JSON.stringify({id:0,method:'qaReport',args:[{success:true,checks}]}));return;}
     document.getElementById('title-input').value='UI接続テスト';
     await click('record-button'); await until(async()=>{await update();return state.current?.frames>0;});
     assert(state.current.status==='recording','Rust recording starts');

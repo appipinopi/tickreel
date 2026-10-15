@@ -1,14 +1,16 @@
-param([string]$FfmpegPath = '')
+param([string]$FfmpegPath = '', [ValidateSet('github','store')][string]$Channel = 'github')
 $ErrorActionPreference = 'Stop'
 $taskWorkspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 Push-Location -LiteralPath $taskWorkspace
+$taskPreviousChannel = $env:TICKREEL_CHANNEL
 try {
+  $env:TICKREEL_CHANNEL = $Channel
   cargo build --release
   if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
   $taskMetadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
   $taskBinary = Join-Path $taskMetadata.target_directory 'release\tickreel-rust.exe'
   $taskVersion = ($taskMetadata.packages | Where-Object name -EQ 'tickreel-rust').version
-  $taskOutput = [System.IO.Path]::GetFullPath((Join-Path $taskWorkspace ('release-rust-' + $taskVersion)))
+  $taskOutput = [System.IO.Path]::GetFullPath((Join-Path $taskWorkspace ($(if ($Channel -eq 'store') { 'release-store-' } else { 'release-rust-' }) + $taskVersion)))
   if (-not $taskOutput.StartsWith($taskWorkspace + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid output directory.' }
   New-Item -ItemType Directory -Path $taskOutput -Force | Out-Null
   if (-not $FfmpegPath) {
@@ -36,6 +38,6 @@ try {
     }
   }
   Get-ChildItem -LiteralPath $taskOutput -Recurse -File | Where-Object { $_.LastWriteTime.Year -lt 1980 -or $_.LastWriteTime.Year -gt 2107 } | ForEach-Object { $_.LastWriteTime = [DateTime]::Now }
-  Compress-Archive -LiteralPath $taskOutput -DestinationPath (Join-Path $taskWorkspace ('release-rust-' + $taskVersion + '.zip')) -CompressionLevel Fastest -Force
+  Compress-Archive -LiteralPath $taskOutput -DestinationPath (Join-Path $taskWorkspace ($(if ($Channel -eq 'store') { 'release-store-' } else { 'release-rust-' }) + $taskVersion + '.zip')) -CompressionLevel Fastest -Force
   Write-Output (Join-Path $taskOutput 'Tickreel-Rust.exe')
-} finally { Pop-Location }
+} finally { $env:TICKREEL_CHANNEL = $taskPreviousChannel; Pop-Location }

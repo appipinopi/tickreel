@@ -1,0 +1,58 @@
+name: Build signed GitHub release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Test
+        run: cargo test --locked
+      - name: Install release tools
+        run: |
+          npm install --no-save --package-lock=false ffmpeg-static@5.3.0
+          python -m pip install cryptography==48.0.0
+      - name: Build and sign
+        shell: pwsh
+        env:
+          TICKREEL_UPDATE_SIGNING_KEY: ${{ secrets.TICKREEL_UPDATE_SIGNING_KEY }}
+        run: |
+          $taskVersion = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object name -EQ 'tickreel-rust' | Select-Object -ExpandProperty version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$taskVersion") { throw 'Tag and Cargo version differ.' }
+          ./scripts/build-rust.ps1
+          python scripts/sign-update.py "release-rust-$taskVersion/Tickreel-Rust.exe" $taskVersion update.json
+          if ($LASTEXITCODE -ne 0) { throw 'Update signing failed.' }
+          "TICKREEL_VERSION=$taskVersion" >> $env:GITHUB_ENV
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tickreel-windows-x64
+          path: |
+            release-rust-${{ env.TICKREEL_VERSION }}.zip
+            release-rust-${{ env.TICKREEL_VERSION }}/Tickreel-Rust.exe
+            update.json
+      - name: Create release draft for review
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $taskTag = "v${{ env.TICKREEL_VERSION }}"
+          $taskExisting = gh release view $taskTag --json isDraft 2>$null | ConvertFrom-Json
+          if ($LASTEXITCODE -eq 0) {
+            if ($taskExisting.isDraft) {
+              gh release upload $taskTag "release-rust-${{ env.TICKREEL_VERSION }}.zip" "release-rust-${{ env.TICKREEL_VERSION }}/Tickreel-Rust.exe" update.json --clobber
+            } else {
+              Write-Output 'This version is already published. Existing release files are preserved.'
+            }
+          } else {
+            gh release create $taskTag "release-rust-${{ env.TICKREEL_VERSION }}.zip" "release-rust-${{ env.TICKREEL_VERSION }}/Tickreel-Rust.exe" update.json --draft --title "Tickreel v${{ env.TICKREEL_VERSION }}" --generate-notes
+          }

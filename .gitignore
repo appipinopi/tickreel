@@ -11,3 +11,5 @@ artifacts/
 *.pfx
 *.p12
 *.key
+
+/update.json

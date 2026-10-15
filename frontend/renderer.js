@@ -214,3 +214,10 @@ const today = new Date(); $('today-date').textContent = today.toLocaleDateString
 estimate();
 Promise.allSettled([loadSources(), loadWindows()]).then(results => { results.forEach(result => { if (result.status === 'rejected') notify(result.reason.message); }); return update(); });
 setInterval(update, 1500);
+
+let updateStatus=null;
+function paintUpdate(value){updateStatus=value;$('update-message').textContent=value.message;$('update-check').hidden=value.channel==='store';$('update-check').disabled=['checking','downloading','ready'].includes(value.phase);$('update-download').hidden=value.phase!=='available';$('update-download').disabled=Boolean(state.current||state.exportState||recorder||working);}
+$('update-check').onclick=async()=>{try{paintUpdate({...updateStatus,phase:'checking',message:'更新を確認しています…'});paintUpdate(await api.updateCheck());}catch(e){notify(e.message);}};
+$('update-download').onclick=async()=>{try{$('update-download').disabled=true;paintUpdate(await api.updateDownload());}catch(e){notify(e.message);}};
+async function pollUpdate(){try{paintUpdate(await api.updateState());}catch(e){console.warn(e.message);}}
+pollUpdate();setInterval(pollUpdate,2000);

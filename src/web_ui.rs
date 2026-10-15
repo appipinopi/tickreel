@@ -49,6 +49,7 @@ enum Message {
 }
 struct Backend {
     engine: Engine,
+    updater: crate::updater::Updater,
     qa: bool,
     mic_public: Mutex<Option<Value>>,
     export_ids: Mutex<Vec<String>>,
@@ -214,6 +215,17 @@ impl Backend {
             "アプリを終了しています。"
         );
         match request.method.as_str() {
+            "updateState" => Ok(json!(self.updater.status())),
+            "updateCheck" => Ok(json!(self.updater.check()?)),
+            "updateDownload" => {
+                self.not_recording_mic()?;
+                let snapshot = self.engine.snapshot();
+                anyhow::ensure!(
+                    snapshot.current.is_none() && snapshot.export.is_none(),
+                    "記録・書き出しの終了後に更新してください。"
+                );
+                Ok(json!(self.updater.download()?))
+            }
             "state" => {
                 let snapshot = self.engine.snapshot();
                 let records = self.engine.store.list()?;
@@ -572,12 +584,17 @@ pub fn run() -> Result<()> {
     };
     let backend = Arc::new(Backend {
         engine,
+        updater: crate::updater::Updater::new(),
         qa,
         mic_public: Mutex::new(None),
         export_ids: Mutex::new(vec![]),
         closing: AtomicBool::new(false),
     });
     if !qa {
+        let updater = backend.updater.clone();
+        std::thread::spawn(move || {
+            let _ = updater.check();
+        });
         let store = backend.engine.store.clone();
         let legacy = dirs::data_dir().unwrap().join("tickreel/recordings");
         std::thread::spawn(move || {
@@ -637,6 +654,8 @@ pub fn run() -> Result<()> {
         .with_background_color((246, 247, 249, 255))
         .with_url(if std::env::args().any(|arg| arg == "--ui-test-editor") {
             "tickreel://localhost/#editor"
+        } else if std::env::args().any(|arg| arg == "--ui-test-update") {
+            "tickreel://localhost/#update"
         } else {
             "tickreel://localhost/"
         })
@@ -661,6 +680,7 @@ pub fn run() -> Result<()> {
             Event::UserEvent(Message::Captured(success))=>{qa_failed|=!success;*flow=ControlFlow::Exit;},
             Event::UserEvent(Message::QaReport(result))=>{let _=fs::create_dir_all("artifacts");let _=fs::write("artifacts/restored-ui-tests.json",serde_json::to_vec_pretty(&result).unwrap());if result.get("success")!=Some(&Value::Bool(true)){qa_failed=true;eprintln!("UI test: {result}");}qa_deadline=Some(Instant::now()+Duration::from_millis(800));},
             Event::WindowEvent{event:WindowEvent::CloseRequested,..}=>{
+                if backend.updater.status().phase=="downloading"{rfd::MessageDialog::new().set_title("Tickreel").set_description("更新のダウンロード完了後に閉じてください。").show();return;}
                 if backend.engine.snapshot().export.is_some(){rfd::MessageDialog::new().set_title("Tickreel").set_description("動画の生成が完了してから閉じてください。").show();return;}
                 if backend.engine.snapshot().current.is_some()||microphones.active.is_some(){let confirmed=matches!(rfd::MessageDialog::new().set_title("Tickreel").set_description("記録・マイク録音を停止して保存し、終了しますか？").set_buttons(rfd::MessageButtons::YesNo).show(),rfd::MessageDialogResult::Yes);if !confirmed{return;}if let Some(active)=&microphones.active{let id=active.id.clone();if let Err(error)=microphones.stop(&backend,&id){eprintln!("{error:#}");return;}}if backend.engine.stop().is_err(){return;}}
                 backend.closing.store(true,Ordering::Relaxed);*flow=ControlFlow::Exit;
@@ -672,6 +692,9 @@ pub fn run() -> Result<()> {
             },_=>{},
         }
     });
+    if !qa {
+        backend.updater.launch_on_exit()?;
+    }
     drop(webview);
     drop(backend);
     drop(context);
