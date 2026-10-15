@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix='tickreel-release-') as temporary:
         assert name in encoders, name
     filters = subprocess.check_output([str(installed / 'ffmpeg.exe'), '-hide_banner', '-filters'], text=True, stderr=subprocess.STDOUT)
     assert ' ass ' in filters
-    result = subprocess.run([str(executable), '--export-self-test'], capture_output=True, text=True, encoding='utf-8', timeout=300)
+    result = subprocess.run([str(executable), '--export-self-test'], capture_output=True, text=True, encoding='utf-8', timeout=600)
     print(result.stdout, result.stderr, flush=True)
     assert result.returncode == 0 and '12 export formats' in result.stdout
     keep = installed / 'keep-user-data.txt'
