@@ -14,6 +14,7 @@ if [[ "$os" == Darwin ]]; then
   cp "$target" "$app/Contents/MacOS/tickreel-rust"
   cp node_modules/ffmpeg-static/ffmpeg "$app/Contents/MacOS/ffmpeg"
   cp node_modules/ffmpeg-static/ffmpeg.LICENSE node_modules/ffmpeg-static/ffmpeg.README "$app/Contents/Resources/licenses/"
+  python3 scripts/collect-licenses.py "$root/licenses"
   cp README.md "$root/README.md"
   cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -40,6 +41,7 @@ else
   cp "$target" "$root/tickreel"
   cp node_modules/ffmpeg-static/ffmpeg "$root/ffmpeg"
   cp node_modules/ffmpeg-static/ffmpeg.LICENSE node_modules/ffmpeg-static/ffmpeg.README "$root/licenses/"
+  python3 scripts/collect-licenses.py "$root/licenses"
   cp README.md "$root/README.md"
   chmod +x "$root/tickreel" "$root/ffmpeg"
   tar -czf "dist/Tickreel-$version-linux-$arch.tar.gz" -C dist "Tickreel-linux-$arch"

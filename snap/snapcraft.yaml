@@ -25,7 +25,7 @@ parts:
   tickreel:
     plugin: dump
     source: https://github.com/appipinopi/tickreel/releases/download/v1.0.0/Tickreel-1.0.0-linux-x86_64.tar.gz
-    source-checksum: sha256/5e6a5569c0d0cd42177c2b08525ac98827baece9493267c663259a336dffa4bb
+    source-checksum: sha256/0d840ff9940cf96782aef3e3c13c332d82f1239480d4466f0ec1b4b7c1fd52fb
     override-build: |
       binary="$(find "$CRAFT_PART_SRC" -type f -name tickreel -print -quit)"
       test -n "$binary"
