@@ -14,6 +14,15 @@ Snapの配布用認証情報はGitHub Secretsへ設定済みです。配布先�
 2026-10-15にSnap Storeへ`1.0.0`（amd64、リビジョン1）をアップロードし、`latest/edge`へ公開しました。
 導入は`sudo snap install tickreel --edge`、以後はsnapdが同じチャンネルの更新を管理します。
 
+## ストア掲載素材（2026-10-15）
+
+Microsoft Storeの日本語掲載には、スクリーンショット4枚と各説明、正方形・縦長の紹介画像、文字なしのヒーロー画像、20秒の1080p紹介動画・サムネイル・日本語字幕を追加し、審査へ再提出しました。公式サイト・プライバシー・サポートURL、検索キーワード7件も登録済みです。
+Snap Storeには、ロゴ・バナー・スクリーンショット4枚、英語と日本語の説明、カテゴリ2件、公式サイト・プライバシー・ソースコード・問い合わせ・不具合報告先を登録済みです。埋め込み用YouTube/Vimeo URLは未提供のため、紹介動画は説明欄のMP4リンクから開く形式です。
+
+紹介動画： https://github.com/appipinopi/tickreel/releases/download/v1.0.0/tickreel-trailer-1080p.mp4
+
+`node scripts/prepare-store-media.mjs`で、既存の`artifacts/x-promo-v2`の紹介動画からストア用の横長動画・字幕を作り、SVGで描いたブランド画像をPNGへ出力します。出力先は`artifacts/store-media/`です。実行には既存のsharpとffmpeg-static、および元動画・ナレーションJSONが必要です。
+
 ## 新版からの自動配布
 
 `.github/workflows/store-distribution.yml` はGitHub Releaseの公開時に動きます。
