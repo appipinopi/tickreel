@@ -11,8 +11,18 @@ use std::{
     time::Duration,
 };
 
-const ENDPOINT: &str =
-    "https://github.com/appipinopi/tickreel/releases/latest/download/update.json";
+const ARCH: &str = if cfg!(target_arch = "aarch64") {
+    "arm64"
+} else if cfg!(target_arch = "x86") {
+    "x86"
+} else {
+    "x64"
+};
+fn endpoint() -> String {
+    format!(
+        "https://github.com/appipinopi/tickreel/releases/latest/download/update-windows-{ARCH}.json"
+    )
+}
 const KEY: &[u8; 32] = include_bytes!("../assets/update-public-key.bin");
 const LIMIT: u64 = 100 * 1024 * 1024;
 
@@ -40,7 +50,10 @@ impl Manifest {
         ensure!(
             self.url
                 .starts_with("https://github.com/appipinopi/tickreel/releases/download/")
-                && self.url.ends_with("/Tickreel.exe"),
+                && self.url.ends_with(&format!(
+                    "/Tickreel-{}-windows-{ARCH}-portable.exe",
+                    self.version
+                )),
             "更新の配布先が不正です。"
         );
         ensure!(
@@ -136,7 +149,7 @@ impl Updater {
         }
         let result = (|| -> Result<Option<Manifest>> {
             let response = client()?
-                .get(ENDPOINT)
+                .get(endpoint())
                 .timeout(Duration::from_secs(20))
                 .send()?;
             if response.status() == reqwest::StatusCode::NOT_FOUND {
@@ -346,14 +359,25 @@ mod tests {
         let key = SigningKey::from_bytes(&[17; 32]);
         let mut m = Manifest {
             version: "1.0.1".into(),
-            url: "https://github.com/appipinopi/tickreel/releases/download/v1.0.1/Tickreel.exe"
-                .into(),
+            url: format!(
+                "https://github.com/appipinopi/tickreel/releases/download/v1.0.1/Tickreel-1.0.1-windows-{ARCH}-portable.exe"
+            ),
             size: 4,
             sha256: "00".repeat(32),
             signature: String::new(),
         };
         m.signature = STANDARD.encode(key.sign(m.signed_bytes().as_bytes()).to_bytes());
         assert!(m.verify(key.verifying_key().as_bytes()).is_ok());
+        let correct_url = m.url.clone();
+        let wrong_arch = if ARCH == "arm64" { "x64" } else { "arm64" };
+        m.url = m.url.replace(
+            &format!("windows-{ARCH}-"),
+            &format!("windows-{wrong_arch}-"),
+        );
+        m.signature = STANDARD.encode(key.sign(m.signed_bytes().as_bytes()).to_bytes());
+        assert!(m.verify(key.verifying_key().as_bytes()).is_err());
+        m.url = correct_url;
+        m.signature = STANDARD.encode(key.sign(m.signed_bytes().as_bytes()).to_bytes());
         m.size = 5;
         assert!(m.verify(key.verifying_key().as_bytes()).is_err());
     }

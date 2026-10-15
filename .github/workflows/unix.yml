@@ -18,6 +18,8 @@ jobs:
         include:
           - runner: ubuntu-24.04
             platform: linux-x86_64
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
           - runner: macos-15
             platform: macos-arm64
           - runner: macos-15-intel
@@ -33,7 +35,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libxrandr-dev libxss-dev libgbm-dev libclang-dev libdbus-1-dev libpipewire-0.3-dev libxcb-randr0-dev xvfb fonts-noto-cjk
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libxrandr-dev libxss-dev libgbm-dev libclang-dev libdbus-1-dev libpipewire-0.3-dev libxcb-randr0-dev xvfb fonts-noto-cjk rpm dpkg-dev
       - name: Test
         run: cargo test --locked
       - name: Install bundled FFmpeg
@@ -53,6 +55,8 @@ jobs:
           path: |
             dist/Tickreel-*.zip
             dist/Tickreel-*.tar.gz
+            dist/Tickreel-*.deb
+            dist/Tickreel-*.rpm
       - name: Attach packages to release
         if: github.ref_type == 'tag' || inputs.release_tag != ''
         env:
@@ -61,7 +65,11 @@ jobs:
         shell: bash
         run: |
           gh release view "$RELEASE_TAG"
-          for file in dist/Tickreel-*.zip dist/Tickreel-*.tar.gz; do
+          for file in dist/Tickreel-*.zip dist/Tickreel-*.tar.gz dist/Tickreel-*.deb dist/Tickreel-*.rpm; do
             [ -e "$file" ] || continue
+            if gh release view "$RELEASE_TAG" --json assets --jq '[.assets[].name] | index("'"$(basename "$file")"'") != null' | grep -q true; then
+              echo "Preserving existing asset: $(basename "$file")"
+              continue
+            fi
             gh release upload "$RELEASE_TAG" "$file"
           done

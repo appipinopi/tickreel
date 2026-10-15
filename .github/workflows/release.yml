@@ -1,58 +1,100 @@
-name: Build signed GitHub release
+name: Build Windows architecture releases
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release to attach packages to (empty = artifacts only)
+        required: false
+        default: ''
 permissions:
   contents: read
 jobs:
-  release:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-latest
+          - arch: x86
+            runner: windows-latest
+          - arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Rust
-        run: rustup toolchain install stable --profile minimal
-      - name: Test
-        run: cargo test --locked
-      - name: Install release tools
+      - name: Set up Rust and signing tools
         run: |
-          npm install --no-save --package-lock=false ffmpeg-static@5.3.0
+          rustup toolchain install stable --profile minimal
           python -m pip install cryptography==48.0.0
-      - name: Build and sign
+      - name: Build, test and sign native payload
         shell: pwsh
         env:
           TICKREEL_UPDATE_SIGNING_KEY: ${{ secrets.TICKREEL_UPDATE_SIGNING_KEY }}
         run: |
           $taskVersion = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object name -EQ 'tickreel-rust' | Select-Object -ExpandProperty version
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$taskVersion") { throw 'Tag and Cargo version differ.' }
-          ./scripts/build-rust.ps1
-          python scripts/sign-update.py "release-rust-$taskVersion/Tickreel.exe" $taskVersion update.json
-          if ($LASTEXITCODE -ne 0) { throw 'Update signing failed.' }
-          "TICKREEL_VERSION=$taskVersion" >> $env:GITHUB_ENV
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+          ./scripts/build-windows.ps1 -Architecture ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
         with:
-          name: Tickreel-windows-x64
-          path: |
-            Tickreel-${{ env.TICKREEL_VERSION }}-windows-x64.zip
-            release-rust-${{ env.TICKREEL_VERSION }}/Tickreel.exe
-            update.json
-      - name: Create release draft for review
-        if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ github.token }}
+          name: windows-payload-${{ matrix.arch }}
+          path: dist/
+  installers:
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-payload-*
+          path: dist
+          merge-multiple: true
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+      - name: Build installers
         shell: pwsh
         run: |
-          $taskTag = "v${{ env.TICKREEL_VERSION }}"
-          $taskExisting = gh release view $taskTag --json isDraft 2>$null | ConvertFrom-Json
-          if ($LASTEXITCODE -eq 0) {
-            if ($taskExisting.isDraft) {
-              gh release upload $taskTag "Tickreel-${{ env.TICKREEL_VERSION }}-windows-x64.zip" "release-rust-${{ env.TICKREEL_VERSION }}/Tickreel.exe" update.json --clobber
-            } else {
-              Write-Output 'This version is already published. Existing release files are preserved.'
-            }
-          } else {
-            gh release create $taskTag "Tickreel-${{ env.TICKREEL_VERSION }}-windows-x64.zip" "release-rust-${{ env.TICKREEL_VERSION }}/Tickreel.exe" update.json --draft --title "Tickreel v${{ env.TICKREEL_VERSION }}" --generate-notes
+          $taskNsis = "${env:ProgramFiles(x86)}/NSIS/makensis.exe"
+          python scripts/build-installers.py $taskNsis dist --arch x64_x86
+          if ($LASTEXITCODE -ne 0) { throw 'x64/x86 installer build failed.' }
+          python scripts/build-installers.py $taskNsis dist --arch arm64
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 installer build failed.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tickreel-windows-installers
+          path: |
+            dist/Tickreel-*.exe
+            dist/Tickreel-*.zip
+            dist/update-windows-*.json
+      - name: Installer smoke test
+        shell: pwsh
+        run: |
+          $taskVersion = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object name -EQ 'tickreel-rust' | Select-Object -ExpandProperty version
+          $taskInstall = Join-Path $env:RUNNER_TEMP 'tickreel-installer-test'
+          $taskProcess = Start-Process -FilePath "dist/Tickreel-$taskVersion-windows-x64_x86.exe" -ArgumentList '/S',"/D=$taskInstall" -WindowStyle Hidden -Wait -PassThru
+          if ($taskProcess.ExitCode -ne 0) { throw 'Installer failed.' }
+          $taskInstalled = Join-Path $taskInstall 'Tickreel.exe'
+          if ((Get-FileHash $taskInstalled).Hash -ne (Get-FileHash dist/windows-x64/Tickreel.exe).Hash) { throw 'Wrong payload installed.' }
+          if (-not (Test-Path "$taskInstall/ffmpeg.exe")) { throw 'FFmpeg missing.' }
+          Set-Content "$taskInstall/keep-user-data.txt" 'keep'
+          Start-Process "$taskInstall/Uninstall.exe" -ArgumentList '/S' -WindowStyle Hidden -Wait
+          Start-Sleep -Seconds 3
+          if (-not (Test-Path "$taskInstall/keep-user-data.txt")) { throw 'Uninstaller deleted user data.' }
+          if (Test-Path $taskInstalled) { throw 'Uninstaller left the executable.' }
+      - name: Attach packages to release
+        if: github.ref_type == 'tag' || inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        shell: pwsh
+        run: |
+          gh release view $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) { throw 'Release not found.' }
+          Get-ChildItem dist/Tickreel-*.exe,dist/Tickreel-*.zip,dist/update-windows-*.json | ForEach-Object {
+            gh release upload $env:RELEASE_TAG $_.FullName --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
           }

@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("executable", type=Path)
 parser.add_argument("version")
 parser.add_argument("output", type=Path)
+parser.add_argument("--arch", choices=("x64", "x86", "arm64"), default="x64")
 args = parser.parse_args()
 encoded = os.environ.get("TICKREEL_UPDATE_SIGNING_KEY")
 raw = (base64.b64decode(encoded.strip(), validate=True) if encoded else
@@ -22,8 +23,9 @@ assert public == (Path(__file__).resolve().parent.parent / "assets/update-public
 data = args.executable.read_bytes()
 assert data[:2] == b"MZ", "Expected a Windows executable"
 assert args.version and all(c.isdigit() or c == "." for c in args.version)
+filename = f"Tickreel-{args.version}-windows-{args.arch}-portable.exe"
 value = dict(version=args.version,
-             url=f"https://github.com/appipinopi/tickreel/releases/download/v{args.version}/Tickreel.exe",
+             url=f"https://github.com/appipinopi/tickreel/releases/download/v{args.version}/{filename}",
              size=len(data), sha256=hashlib.sha256(data).hexdigest())
 signed = f"Tickreel update\n{value['version']}\n{value['url']}\n{value['size']}\n{value['sha256']}\n"
 value["signature"] = base64.b64encode(key.sign(signed.encode())).decode()

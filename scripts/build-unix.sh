@@ -45,4 +45,5 @@ else
   cp README.md "$root/README.md"
   chmod +x "$root/tickreel" "$root/ffmpeg"
   tar -czf "dist/Tickreel-$version-linux-$arch.tar.gz" -C dist "Tickreel-linux-$arch"
+  python3 scripts/package-linux.py "$root"
 fi
