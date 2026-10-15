@@ -89,6 +89,7 @@ Record desktop work with captions, narration and music. X11 capture required.
 mkdir -p %{{buildroot}}
 cp -a "{stage}/." %{{buildroot}}/
 %files
+%defattr(-,root,root,-)
 /opt/tickreel
 /usr/bin/tickreel
 /usr/share/applications/tickreel.desktop

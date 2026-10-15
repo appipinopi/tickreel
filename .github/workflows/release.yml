@@ -25,6 +25,10 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
       - name: Set up Rust and signing tools
         run: |
           rustup toolchain install stable --profile minimal
