@@ -40,7 +40,7 @@ tar.gzはGTK 3・WebKitGTK 4.1・ALSA・X11関連の実行時ライブラリを�
 
 ## Snap
 
-publisher `appipinopi` に名前 `tickreel` を登録済みです。公開リビジョンはまだありません。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。GitHub Releasesの検証済みLinuxパッケージをSHA-256で照合して取り込みます。新版を配信する際は、source URL・checksum・versionを一緒に更新してください。
+publisher `appipinopi` に名前 `tickreel` を登録済みです。Storeの公開リビジョンはまだありません。試作SnapはGitHub Releasesへ添付しています。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。GitHub Releasesの検証済みLinuxパッケージをSHA-256で照合して取り込みます。新版を配信する際は、source URL・checksum・versionを一緒に更新してください。
 
 ```sh
 snapcraft
