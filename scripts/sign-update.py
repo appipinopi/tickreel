@@ -14,7 +14,7 @@ parser.add_argument("version")
 parser.add_argument("output", type=Path)
 args = parser.parse_args()
 encoded = os.environ.get("TICKREEL_UPDATE_SIGNING_KEY")
-raw = (base64.b64decode(encoded, validate=True) if encoded else
+raw = (base64.b64decode(encoded.strip(), validate=True) if encoded else
        (Path(os.environ["LOCALAPPDATA"]) / "TickreelPublisher/update-signing-key.bin").read_bytes())
 key = Ed25519PrivateKey.from_private_bytes(raw)
 public = key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
