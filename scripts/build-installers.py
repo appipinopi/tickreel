@@ -1,6 +1,9 @@
 """Build architecture-selecting NSIS installers from tested native payloads."""
 import argparse
+import hashlib
+import json
 from pathlib import Path
+import struct
 import subprocess
 import tomllib
 
@@ -16,6 +19,12 @@ files, folders = set(), set()
 for arch in architectures:
     root = payload / f'windows-{arch}'
     assert (root / 'Tickreel.exe').is_file() and (root / 'ffmpeg.exe').is_file()
+    manifest = json.loads((payload / f'update-windows-{arch}.json').read_text())
+    binary = (root / 'Tickreel.exe').read_bytes()
+    assert manifest['version'] == version, 'Reused payload version does not match Cargo.toml'
+    assert manifest['size'] == len(binary) and manifest['sha256'] == hashlib.sha256(binary).hexdigest(), 'Payload hash mismatch'
+    machine = struct.unpack_from('<H', binary, struct.unpack_from('<I', binary, 0x3c)[0] + 4)[0]
+    assert machine == {'x64': 0x8664, 'x86': 0x14c, 'arm64': 0xaa64}[arch], 'Wrong payload architecture'
     for path in (root / 'licenses').rglob('*'):
         relative = str(path.relative_to(root)).replace('/', '\\')
         assert not any(c in relative for c in ('"', '$', '\n'))
