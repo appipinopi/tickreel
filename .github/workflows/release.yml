@@ -8,10 +8,15 @@ on:
         description: Existing release to attach packages to (empty = artifacts only)
         required: false
         default: ''
+      payload_run:
+        description: 'Reuse native payload artifacts from a completed run (empty = rebuild)'
+        required: false
+        default: ''
 permissions:
   contents: read
 jobs:
   build:
+    if: inputs.payload_run == ''
     strategy:
       fail-fast: false
       matrix:
@@ -47,9 +52,11 @@ jobs:
           path: dist/
   installers:
     needs: build
+    if: always() && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.payload_run != ''))
     runs-on: windows-latest
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -57,6 +64,8 @@ jobs:
           pattern: windows-payload-*
           path: dist
           merge-multiple: true
+          run-id: ${{ inputs.payload_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Install NSIS
         run: choco install nsis --no-progress -y
       - name: Build installers

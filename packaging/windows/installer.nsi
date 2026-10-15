@@ -45,6 +45,21 @@ Function .onInit
 !endif
 FunctionEnd
 
+Function un.onInit
+  IfFileExists "$INSTDIR\Tickreel.exe" 0 uninstall_ready
+  ClearErrors
+  FileOpen $0 "$INSTDIR\Tickreel.exe" a
+  IfErrors uninstall_busy
+  FileClose $0
+  Goto uninstall_ready
+uninstall_busy:
+  IfSilent +2
+  MessageBox MB_ICONSTOP "Close Tickreel before uninstalling."
+  SetErrorLevel 1
+  Abort
+uninstall_ready:
+FunctionEnd
+
 Section "Tickreel" Main
   ; Detect an active executable before touching any existing installation.
   IfFileExists "$INSTDIR\Tickreel.exe" 0 ready
