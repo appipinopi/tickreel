@@ -25,6 +25,8 @@ Microsoft StoreのMSIX更新を利用します。パッケージIDを持つア�
 
 Partner CenterでWindowsアプリの製品「Tickreel」を予約した後、製品ID画面の **Package/Identity/Name**、**Package/Identity/Publisher**、**Package/Properties/PublisherDisplayName** を使用します。
 
+Tickreelの実際の製品情報は `packaging/store-identity.json` に保存しています。Store IDは `9P6Z0TV3JVRR`、Identity Nameは `appipinopi.Tickreel` です。この製品向けのビルドは `./scripts/build-tickreel-store.ps1` で再実行できます。
+
 ```powershell
 ./scripts/build-store.ps1 -IdentityName '<Partner CenterのName>' -Publisher '<Partner CenterのPublisher>' -PublisherDisplayName '<PublisherDisplayName>'
 ```
