@@ -15,7 +15,7 @@
 | macOS Intel | .app入りZIP（プレビュー） | macOS 12以降、画面収録・マイクの許可 |
 | Linux x64 | tar.gz（プレビュー） | Ubuntu 24.04相当以降、X11、GTK 3、WebKitGTK 4.1、ALSA |
 
-ReleasesのAssetsから、自分のOS・CPUに合うパッケージを選んでください。WindowsはZIPを展開して `Tickreel-Rust.exe` を起動します。macOSは展開した `Tickreel.app` をApplicationsへ移動します。Linuxは展開先の `tickreel` を実行します。同梱のFFmpegをアプリと同じ場所に置いたまま使ってください。
+ReleasesのAssetsから、自分のOS・CPUに合うパッケージを選んでください。WindowsはZIPを展開して `Tickreel.exe` を起動します。macOSは展開した `Tickreel.app` をApplicationsへ移動します。Linuxは展開先の `tickreel` を実行します。同梱のFFmpegをアプリと同じ場所に置いたまま使ってください。
 
 macOS版はAppleによる公証を行っていないプレビュー版です。macOS・Linuxの実機確認は継続中です。LinuxのWaylandセッションでの画面記録には、まだ対応していません。
 

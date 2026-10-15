@@ -66,7 +66,7 @@ fn main() {
     };
     if let Err(error) = result {
         rfd::MessageDialog::new()
-            .set_title("Tickreel Rust")
+            .set_title("Tickreel")
             .set_description(format!("起動できませんでした。\n{error:#}"))
             .set_level(rfd::MessageLevel::Error)
             .show();

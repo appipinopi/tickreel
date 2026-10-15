@@ -40,7 +40,7 @@ impl Manifest {
         ensure!(
             self.url
                 .starts_with("https://github.com/appipinopi/tickreel/releases/download/")
-                && self.url.ends_with("/Tickreel-Rust.exe"),
+                && self.url.ends_with("/Tickreel.exe"),
             "更新の配布先が不正です。"
         );
         ensure!(
@@ -205,7 +205,7 @@ impl Updater {
             let stage = tempfile::Builder::new()
                 .prefix("update-")
                 .tempdir_in(root)?;
-            let path = stage.path().join("Tickreel-Rust.exe");
+            let path = stage.path().join("Tickreel.exe");
             let mut file = fs::File::create(&path)?;
             let response = client()?.get(&manifest.url).send()?.error_for_status()?;
             let count = std::io::copy(&mut response.take(manifest.size + 1), &mut file)?;
@@ -253,7 +253,7 @@ impl Updater {
             serde_json::from_slice(&fs::read(stage.path().join("manifest.json"))?)?;
         manifest.verify(KEY)?;
         ensure!(
-            digest(&stage.path().join("Tickreel-Rust.exe"))? == manifest.sha256,
+            digest(&stage.path().join("Tickreel.exe"))? == manifest.sha256,
             "更新ファイルが変更されています。"
         );
         let helper = stage.path().join("Tickreel-UpdateHelper.exe");
@@ -290,7 +290,7 @@ pub fn apply(stage: PathBuf, target: PathBuf, parent: u32) -> Result<()> {
     );
     let manifest: Manifest = serde_json::from_slice(&fs::read(stage.join("manifest.json"))?)?;
     manifest.verify(KEY)?;
-    let source = stage.join("Tickreel-Rust.exe");
+    let source = stage.join("Tickreel.exe");
     ensure!(
         fs::metadata(&source)?.len() == manifest.size && digest(&source)? == manifest.sha256,
         "更新ファイルを検証できません。"
@@ -346,9 +346,8 @@ mod tests {
         let key = SigningKey::from_bytes(&[17; 32]);
         let mut m = Manifest {
             version: "1.0.1".into(),
-            url:
-                "https://github.com/appipinopi/tickreel/releases/download/v1.0.1/Tickreel-Rust.exe"
-                    .into(),
+            url: "https://github.com/appipinopi/tickreel/releases/download/v1.0.1/Tickreel.exe"
+                .into(),
             size: 4,
             sha256: "00".repeat(32),
             signature: String::new(),

@@ -20,7 +20,10 @@ try {
   }
   if (-not $FfmpegPath) { throw 'Provide -FfmpegPath pointing to ffmpeg.exe.' }
   $taskFfmpeg = (Get-Item -LiteralPath $FfmpegPath).FullName
-  Copy-Item -LiteralPath $taskBinary -Destination (Join-Path $taskOutput 'Tickreel-Rust.exe') -Force
+  # Remove the previous public executable name when reusing a build directory.
+  $taskLegacyExecutable = Join-Path $taskOutput 'Tickreel-Rust.exe'
+  if (Test-Path -LiteralPath $taskLegacyExecutable -PathType Leaf) { Remove-Item -LiteralPath $taskLegacyExecutable -Force }
+  Copy-Item -LiteralPath $taskBinary -Destination (Join-Path $taskOutput 'Tickreel.exe') -Force
   if ($taskFfmpeg -ne (Join-Path $taskOutput 'ffmpeg.exe')) { Copy-Item -LiteralPath $taskFfmpeg -Destination (Join-Path $taskOutput 'ffmpeg.exe') -Force }
   Copy-Item -LiteralPath (Join-Path $taskWorkspace 'README.md') -Destination $taskOutput -Force
   New-Item -ItemType Directory -Path (Join-Path $taskOutput 'licenses') -Force | Out-Null
@@ -38,6 +41,6 @@ try {
     }
   }
   Get-ChildItem -LiteralPath $taskOutput -Recurse -File | Where-Object { $_.LastWriteTime.Year -lt 1980 -or $_.LastWriteTime.Year -gt 2107 } | ForEach-Object { $_.LastWriteTime = [DateTime]::Now }
-  Compress-Archive -LiteralPath $taskOutput -DestinationPath (Join-Path $taskWorkspace ($(if ($Channel -eq 'store') { 'release-store-' } else { 'release-rust-' }) + $taskVersion + '.zip')) -CompressionLevel Fastest -Force
-  Write-Output (Join-Path $taskOutput 'Tickreel-Rust.exe')
+  Compress-Archive -LiteralPath $taskOutput -DestinationPath (Join-Path $taskWorkspace ($(if ($Channel -eq 'store') { 'release-store-' } else { 'Tickreel-' }) + $taskVersion + $(if ($Channel -eq 'github') { '-windows-x64' } else { '' }) + '.zip')) -CompressionLevel Fastest -Force
+  Write-Output (Join-Path $taskOutput 'Tickreel.exe')
 } finally { $env:TICKREEL_CHANNEL = $taskPreviousChannel; Pop-Location }

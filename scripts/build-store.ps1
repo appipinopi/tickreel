@@ -18,7 +18,7 @@ try {
   $taskInput = Join-Path $taskWorkspace ('release-store-' + $taskVersion)
   $taskStage = Join-Path $taskWorkspace ('dist\store-' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $taskStage -Force | Out-Null
-  Copy-Item -LiteralPath (Join-Path $taskInput 'Tickreel-Rust.exe'), (Join-Path $taskInput 'ffmpeg.exe'), (Join-Path $taskInput 'README.md') -Destination $taskStage
+  Copy-Item -LiteralPath (Join-Path $taskInput 'Tickreel.exe'), (Join-Path $taskInput 'ffmpeg.exe'), (Join-Path $taskInput 'README.md') -Destination $taskStage
   Copy-Item -LiteralPath (Join-Path $taskInput 'licenses') -Destination $taskStage -Recurse
   $taskAssets = Join-Path $taskStage 'Assets'
   New-Item -ItemType Directory -Path $taskAssets -Force | Out-Null
@@ -45,7 +45,7 @@ try {
   <Properties><DisplayName>Tickreel</DisplayName><PublisherDisplayName>$taskDisplay</PublisherDisplayName><Logo>Assets\Logo50.png</Logo></Properties>
   <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" /></Dependencies>
   <Resources><Resource Language="ja-JP" /></Resources>
-  <Applications><Application Id="Tickreel" Executable="Tickreel-Rust.exe" EntryPoint="Windows.FullTrustApplication"><uap:VisualElements DisplayName="Tickreel" Description="一日の作業をタイムラプスに" BackgroundColor="#147b70" Square150x150Logo="Assets\Logo150.png" Square44x44Logo="Assets\Logo44.png" /></Application></Applications>
+  <Applications><Application Id="Tickreel" Executable="Tickreel.exe" EntryPoint="Windows.FullTrustApplication"><uap:VisualElements DisplayName="Tickreel" Description="一日の作業をタイムラプスに" BackgroundColor="#147b70" Square150x150Logo="Assets\Logo150.png" Square44x44Logo="Assets\Logo44.png" /></Application></Applications>
   <Capabilities><rescap:Capability Name="runFullTrust" /><DeviceCapability Name="microphone" /></Capabilities>
 </Package>
 "@

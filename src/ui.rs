@@ -113,7 +113,7 @@ pub fn run() -> Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "Tickreel Rust",
+        "Tickreel",
         options,
         Box::new(move |creation| {
             let mut fonts = egui::FontDefinitions::default();

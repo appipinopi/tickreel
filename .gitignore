@@ -13,3 +13,5 @@ artifacts/
 *.key
 
 /update.json
+
+/Tickreel-*-windows-x64.zip

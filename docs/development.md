@@ -4,7 +4,7 @@
 
 ## 起動
 
-`release-rust-1.0.0\Tickreel-Rust.exe` を起動してください。`ffmpeg.exe` を同じフォルダーに置いたまま使います。配布用ZIPは展開してから起動します。開いている旧版は先に閉じてください。Electron・Node.jsは実行時に不要です。WindowsのWebView2 Runtimeが必要です。
+`release-rust-1.0.0\Tickreel.exe` を起動してください。`ffmpeg.exe` を同じフォルダーに置いたまま使います。配布用ZIPは展開してから起動します。開いている旧版は先に閉じてください。Electron・Node.jsは実行時に不要です。WindowsのWebView2 Runtimeが必要です。
 
 1. 制作の種類（お絵描き / 開発）、記録するモニター、撮影間隔、fpsを選びます。
 2. 黒塗りするアプリ、複数画面の並べ方、無操作判定と早送り倍率を選びます。
@@ -49,7 +49,7 @@ cargo build --release
 powershell -ExecutionPolicy Bypass -File scripts/build-rust.ps1 -FfmpegPath C:\tools\ffmpeg.exe
 ```
 
-ビルドスクリプトは `release-rust-1.0.0` にアプリ、FFmpeg、説明・ライセンスを配置し、`release-rust-1.0.0.zip` を作ります。ビルド先のアプリを閉じてから実行してください。開発時は `TICKREEL_FFMPEG` 環境変数でFFmpegのパスを指定できます。初回の依存ライブラリ取得にはネットワークが必要です。
+ビルドスクリプトは `release-rust-1.0.0` にアプリ、FFmpeg、説明・ライセンスを配置し、`Tickreel-1.0.0-windows-x64.zip` を作ります。ビルド先のアプリを閉じてから実行してください。開発時は `TICKREEL_FFMPEG` 環境変数でFFmpegのパスを指定できます。初回の依存ライブラリ取得にはネットワークが必要です。
 
 `--self-test` はWindowsの画面取得をメモリ上で検証し、合成画像とテスト音声で黒塗り・動画生成・音声合成・エンドカード・期間まとめ・データ取り込み・削除を確認します。実際の画面画像や会話をテスト用記録に保存しません。`--ui-test` / `--ui-test-editor` は隔離した合成画面・音声で実際のUIボタンからRust処理を検証し、WebView2の描画を直接取得して確認画像を保存します。
 

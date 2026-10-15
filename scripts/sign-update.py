@@ -23,7 +23,7 @@ data = args.executable.read_bytes()
 assert data[:2] == b"MZ", "Expected a Windows executable"
 assert args.version and all(c.isdigit() or c == "." for c in args.version)
 value = dict(version=args.version,
-             url=f"https://github.com/appipinopi/tickreel/releases/download/v{args.version}/Tickreel-Rust.exe",
+             url=f"https://github.com/appipinopi/tickreel/releases/download/v{args.version}/Tickreel.exe",
              size=len(data), sha256=hashlib.sha256(data).hexdigest())
 signed = f"Tickreel update\n{value['version']}\n{value['url']}\n{value['size']}\n{value['sha256']}\n"
 value["signature"] = base64.b64encode(key.sign(signed.encode())).decode()
