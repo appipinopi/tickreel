@@ -411,7 +411,16 @@ impl Backend {
                 let record = self.engine.store.get(requested)?;
                 Ok(record
                     .narration_path
-                    .map(|_| json!(format!("http://tickreel.localhost/audio/{requested}")))
+                    .map(|_| {
+                        json!(format!(
+                            "{}audio/{requested}",
+                            if cfg!(windows) {
+                                "http://tickreel.localhost/"
+                            } else {
+                                "tickreel://localhost/"
+                            }
+                        ))
+                    })
                     .unwrap_or(Value::Null))
             }
             "removeAudio" => {
@@ -562,6 +571,7 @@ impl Backend {
 }
 
 pub fn run() -> Result<()> {
+    #[cfg(windows)]
     anyhow::ensure!(
         wry::webview_version().is_ok(),
         "WebView2 Runtimeが必要です。WindowsのWebView2 Runtimeをインストールしてください。"
@@ -570,6 +580,8 @@ pub fn run() -> Result<()> {
     let qa_root = if qa { Some(tempfile::tempdir()?) } else { None };
     let root = if let Some(temporary) = &qa_root {
         temporary.path().join("records")
+    } else if let Some(common) = std::env::var_os("SNAP_USER_COMMON") {
+        PathBuf::from(common).join("recordings")
     } else {
         dirs::data_dir()
             .context("データフォルダーがありません。")?
@@ -616,7 +628,7 @@ pub fn run() -> Result<()> {
     let asset_backend = backend.clone();
     let request_proxy = proxy.clone();
     let load_proxy = proxy.clone();
-    let webview = WebViewBuilder::new_with_web_context(&mut context)
+    let builder = WebViewBuilder::new_with_web_context(&mut context)
         .with_asynchronous_custom_protocol("tickreel".into(), move |_, request, responder| {
             let backend = asset_backend.clone();
             std::thread::spawn(move || {
@@ -658,8 +670,19 @@ pub fn run() -> Result<()> {
             "tickreel://localhost/#update"
         } else {
             "tickreel://localhost/"
-        })
-        .build(&window)?;
+        });
+    #[cfg(not(target_os = "linux"))]
+    let webview = builder.build(&window)?;
+    #[cfg(target_os = "linux")]
+    let webview = {
+        use tao::platform::unix::WindowExtUnix;
+        use wry::WebViewBuilderExtUnix;
+        builder.build_gtk(
+            window
+                .default_vbox()
+                .context("GTKコンテナーがありません。")?,
+        )?
+    };
     let mut microphones = Microphones::default();
     let mut qa_deadline: Option<Instant> = None;
     let mut qa_failed = false;
@@ -702,6 +725,7 @@ pub fn run() -> Result<()> {
     anyhow::ensure!(!qa_failed, "元のUIとRust処理の接続テストに失敗しました。");
     Ok(())
 }
+#[cfg(windows)]
 fn capture_webview(
     webview: &wry::WebView,
     proxy: tao::event_loop::EventLoopProxy<Message>,
@@ -759,5 +783,18 @@ fn capture_webview(
             &callback,
         )?;
     }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn capture_webview(
+    _webview: &wry::WebView,
+    proxy: tao::event_loop::EventLoopProxy<Message>,
+    _file: PathBuf,
+) -> Result<()> {
+    // Non-Windows QA verifies the DOM/RPC without the WebView2-only capture API.
+    proxy
+        .send_event(Message::Captured(true))
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(())
 }

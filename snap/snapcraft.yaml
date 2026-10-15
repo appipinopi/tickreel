@@ -1,0 +1,47 @@
+name: tickreel
+title: Tickreel
+version: '1.0.0'
+summary: Turn your daily desktop work into a timelapse
+description: |
+  Record your drawing or development workflow locally, then create a timelapse
+  with visual captions, your own voice narration, music and work statistics.
+  Supports multiple monitors and weekly/monthly compilations.
+  This initial Linux version supports X11 sessions. Wayland capture is not supported.
+  Microphone recording requires connecting the audio-record interface.
+base: core24
+grade: devel
+confinement: strict
+platforms:
+  amd64:
+apps:
+  tickreel:
+    command: bin/tickreel-rust
+    extensions: [gnome]
+    plugs: [x11, audio-playback, audio-record, network, home, screen-inhibit-control]
+    environment:
+      TICKREEL_FFMPEG: $SNAP/usr/bin/ffmpeg
+parts:
+  tickreel:
+    plugin: rust
+    source: .
+    rust-channel: stable
+    build-packages:
+      - pkg-config
+      - libgtk-3-dev
+      - libwebkit2gtk-4.1-dev
+      - libasound2-dev
+      - libxdo-dev
+      - libxrandr-dev
+      - libxss-dev
+      - libgbm-dev
+      - libclang-dev
+      - libdbus-1-dev
+      - libpipewire-0.3-dev
+      - libxcb-randr0-dev
+    stage-packages:
+      - ffmpeg
+      - libasound2t64
+      - libxdo3
+      - libxss1
+      - libpipewire-0.3-0t64
+      - fonts-noto-cjk

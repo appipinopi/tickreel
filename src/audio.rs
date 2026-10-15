@@ -23,7 +23,7 @@ impl Microphone {
     pub fn start(file: &Path) -> Result<Self> {
         let device = cpal::default_host()
             .default_input_device()
-            .context("マイクが見つかりません。Windowsのマイク設定を確認してください。")?;
+            .context("マイクが見つかりません。OSのマイク設定を確認してください。")?;
         let supported = device.default_input_config()?;
         let format = supported.sample_format();
         let config: cpal::StreamConfig = supported.into();

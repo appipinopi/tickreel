@@ -642,6 +642,7 @@ mod tests {
         Ok(RgbImage::new(8, 8))
     }
     #[test]
+    #[cfg(windows)]
     fn pause_discards_capture_that_is_already_running() {
         let root = tempfile::tempdir().unwrap();
         let engine = Engine::with_capture(root.path().join("records"), delayed_capture).unwrap();

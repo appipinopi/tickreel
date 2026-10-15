@@ -3,9 +3,17 @@ mod audio;
 mod engine;
 mod export;
 mod model;
+#[cfg(windows)]
+mod native;
+#[cfg(not(windows))]
+#[path = "native_unix.rs"]
 mod native;
 mod store;
 mod ui;
+#[cfg(windows)]
+mod updater;
+#[cfg(not(windows))]
+#[path = "updater_unix.rs"]
 mod updater;
 mod web_ui;
 

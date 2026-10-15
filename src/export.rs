@@ -4,11 +4,12 @@ use crate::{
     store::Store,
 };
 use anyhow::{Context, Result};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::{
     collections::VecDeque,
     fs,
     io::{BufRead, BufReader},
-    os::windows::process::CommandExt,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -18,22 +19,36 @@ pub fn ffmpeg() -> PathBuf {
         return path.into();
     }
     if let Ok(executable) = std::env::current_exe() {
-        let adjacent = executable.with_file_name("ffmpeg.exe");
+        let adjacent = executable.with_file_name(if cfg!(windows) {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        });
         if adjacent.is_file() {
             return adjacent;
         }
     }
-    let development =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("node_modules/ffmpeg-static/ffmpeg.exe");
+    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(if cfg!(windows) {
+        "node_modules/ffmpeg-static/ffmpeg.exe"
+    } else {
+        "node_modules/ffmpeg-static/ffmpeg"
+    });
     if development.is_file() {
         development
     } else {
-        "ffmpeg.exe".into()
+        if cfg!(windows) {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        }
+        .into()
     }
 }
 pub fn hidden_command(executable: &Path) -> Command {
     let mut command = Command::new(executable);
-    command.creation_flags(0x08000000).stdin(Stdio::null());
+    #[cfg(windows)]
+    command.creation_flags(0x08000000);
+    command.stdin(Stdio::null());
     command
 }
 fn concat_path(path: &Path) -> String {
@@ -84,13 +99,20 @@ pub fn output_format(path: &Path) -> Result<String> {
     Ok(format)
 }
 fn subtitles(items: &[(Recording, f64, f64)], edit: &Edit) -> String {
+    let font = if cfg!(windows) {
+        "Yu Gothic"
+    } else if cfg!(target_os = "macos") {
+        "Hiragino Sans"
+    } else {
+        "Noto Sans CJK JP"
+    };
     let color = if edit.theme == "terminal" {
         "&H00B2EDBE"
     } else {
         "&H00FFFFFF"
     };
     let mut text = format!(
-        "[Script Info]\nScriptType: v4.00+\nPlayResX: 1920\nPlayResY: 1080\nWrapStyle: 0\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Caption,Yu Gothic,46,{color},&H00FFFFFF,&H001B2828,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,2,65,65,88,1\nStyle: Stats,Yu Gothic,24,&H00FFFFFF,&H00FFFFFF,&H001B2828,&H90000000,0,0,0,0,100,100,0,0,3,8,0,7,45,45,32,1\nStyle: Title,Yu Gothic,42,{color},&H00FFFFFF,&H001B2828,&H90000000,-1,0,0,0,100,100,0,0,1,2,1,8,65,65,78,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        "[Script Info]\nScriptType: v4.00+\nPlayResX: 1920\nPlayResY: 1080\nWrapStyle: 0\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Caption,{font},46,{color},&H00FFFFFF,&H001B2828,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,2,65,65,88,1\nStyle: Stats,{font},24,&H00FFFFFF,&H00FFFFFF,&H001B2828,&H90000000,0,0,0,0,100,100,0,0,3,8,0,7,45,45,32,1\nStyle: Title,{font},42,{color},&H00FFFFFF,&H001B2828,&H90000000,-1,0,0,0,100,100,0,0,1,2,1,8,65,65,78,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     );
     let mut event = |start: f64, end: f64, style: &str, value: String| {
         if end > start {
