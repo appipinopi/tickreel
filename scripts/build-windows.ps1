@@ -14,6 +14,8 @@ New-Item -ItemType Directory -Path $taskRoot -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $taskMetadata.target_directory "$taskTarget/release/tickreel-rust.exe") -Destination "$taskRoot/Tickreel.exe" -Force
 python scripts/prepare-windows-ffmpeg.py $Architecture $taskRoot
 if ($LASTEXITCODE -ne 0) { throw 'FFmpeg preparation failed.' }
+python scripts/check-export-formats.py "$taskRoot/Tickreel.exe"
+if ($LASTEXITCODE -ne 0) { throw 'Native export verification failed.' }
 python scripts/collect-licenses.py "$taskRoot/licenses"
 if ($LASTEXITCODE -ne 0) { throw 'License collection failed.' }
 Copy-Item README.md "$taskRoot/README.md" -Force
