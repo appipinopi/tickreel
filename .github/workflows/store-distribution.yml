@@ -1,0 +1,107 @@
+name: Publish Store updates
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Published GitHub release, e.g. v1.0.1'
+        required: true
+      source_ref:
+        description: 'Source ref for a manual run (must match the release version)'
+        default: main
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: tickreel-store-distribution
+  cancel-in-progress: false
+jobs:
+  msix:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+      TICKREEL_CHANNEL: store
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.source_ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          $taskVersion = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object name -EQ 'tickreel-rust' | Select-Object -ExpandProperty version
+          if ($env:RELEASE_TAG -ne "v$taskVersion") { throw 'Release tag and Cargo version differ.' }
+          "APP_VERSION=$taskVersion" >> $env:GITHUB_ENV
+      - name: Install Rust and FFmpeg
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed.' }
+          npm install --no-save --package-lock=false ffmpeg-static@5.3.0
+          if ($LASTEXITCODE -ne 0) { throw 'FFmpeg installation failed.' }
+      - name: Test and build Store MSIX
+        shell: pwsh
+        run: |
+          cargo test --locked
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+          ./scripts/build-tickreel-store.ps1
+          python scripts/publish-store-update.py --package "dist/Tickreel-Store-$env:APP_VERSION.msix" --validate-only
+          if ($LASTEXITCODE -ne 0) { throw 'MSIX validation failed.' }
+      - name: Verify Store-managed updates
+        shell: pwsh
+        run: |
+          $taskOutput = Join-Path $env:RUNNER_TEMP 'tickreel-store-update.json'
+          $taskErrors = Join-Path $env:RUNNER_TEMP 'tickreel-store-update-errors.log'
+          $taskProcess = Start-Process -FilePath "release-store-$env:APP_VERSION/Tickreel.exe" -ArgumentList '--check-update' -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput $taskOutput -RedirectStandardError $taskErrors
+          if ($taskProcess.ExitCode -ne 0) { throw 'Store update check failed.' }
+          $taskStatus = Get-Content $taskOutput -Raw | ConvertFrom-Json
+          if ($taskStatus.channel -ne 'store' -or $taskStatus.phase -ne 'store') { throw 'Store package attempted GitHub updates.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tickreel-Store-MSIX
+          path: dist/Tickreel-Store-*.msix
+          if-no-files-found: error
+      - name: Submit update for Microsoft certification
+        shell: pwsh
+        env:
+          MS_STORE_TENANT_ID: ${{ secrets.MS_STORE_TENANT_ID }}
+          MS_STORE_CLIENT_ID: ${{ secrets.MS_STORE_CLIENT_ID }}
+          MS_STORE_CLIENT_SECRET: ${{ secrets.MS_STORE_CLIENT_SECRET }}
+        run: |
+          python scripts/publish-store-update.py --package "dist/Tickreel-Store-$env:APP_VERSION.msix" --commit
+          if ($LASTEXITCODE -ne 0) { throw 'Store submission did not complete. The MSIX artifact is available above.' }
+  snap:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+      SNAP_CHANNEL: ${{ vars.TICKREEL_SNAP_CHANNEL || 'edge' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.source_ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Pin the release payload and checksum
+        run: python scripts/prepare-snap-release.py --tag "$RELEASE_TAG" --attempts 24
+      - uses: snapcore/action-build@v1
+        id: snapcraft
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tickreel-Store-Snap
+          path: ${{ steps.snapcraft.outputs.snap }}
+          if-no-files-found: error
+      - name: Publish Snap update
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          SNAP_FILE: ${{ steps.snapcraft.outputs.snap }}
+        run: bash scripts/publish-snap.sh "$SNAP_FILE" "$SNAP_CHANNEL"

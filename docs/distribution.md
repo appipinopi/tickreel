@@ -2,6 +2,8 @@
 
 GitHub: https://github.com/appipinopi/tickreel
 
+Microsoft Store・Snap Storeの初回提出、公開リリースからの自動配布、必要な認証情報は [Store公開と自動更新](store-publishing.md) を参照してください。
+
 ## GitHub版
 
 インストーラーで導入するか、CPU別ZIPを展開して起動します。起動時に公開Releasesの `latest/download/update-windows-x64.json` / `update-windows-x86.json` / `update-windows-arm64.json` のうち、自分のCPU用の情報を確認します。新版がある場合はサイドバーからダウンロードできます。記録・アフレコ・書き出し中は更新のダウンロードを開始できません。準備完了後に通常終了すると差し替え・再起動します。自動ダウンロードや強制終了は行いません。

@@ -5,7 +5,7 @@ Push-Location -LiteralPath $taskWorkspace
 $taskPreviousChannel = $env:TICKREEL_CHANNEL
 try {
   $env:TICKREEL_CHANNEL = $Channel
-  cargo build --release
+  cargo build --release --locked
   if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
   $taskMetadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
   $taskBinary = Join-Path $taskMetadata.target_directory 'release\tickreel-rust.exe'

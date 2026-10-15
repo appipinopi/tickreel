@@ -16,3 +16,4 @@ artifacts/
 
 /Tickreel-*-windows-x64.zip
 __pycache__/
+/.store-credentials/

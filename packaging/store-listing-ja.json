@@ -1,0 +1,9 @@
+{
+  "title": "Tickreel",
+  "description": "一日の積み重ねを、一本のタイムラプスに。\n\nTickreelは、お絵描き・プログラミング・毎日の制作作業を記録し、テロップ・自分の声・BGMを添えた動画にするデスクトップアプリです。画面と録音は自分のPCに保存します。\n\n画面と記録の間隔を選んで、スタート。作業を終えたら、編集画面で言葉や音を添えて書き出せます。複数日の記録をまとめる週間・月間まとめにも対応しています。\n\n無料版の動画・GIFには、末尾に3秒のTickreelエンドカードが入ります。Windows 10/11とWebView2 Runtimeが必要です。\n\n選んだアプリのウィンドウを保存前に黒塗りできますが、通知や瞬間的な移動を完全に隠せるとは限りません。共有前に生成結果を確認してください。",
+  "features": ["画面を一定間隔で記録し、タイムラプスを生成", "最大8画面の記録と保存前のウィンドウ黒塗り", "GUIテロップ編集・BGM・自分の声でのアフレコ", "無操作区間の早送りと作業スタッツ", "週間・月間まとめ", "MP4・MOV・WebM・MKV・AVI・GIFと音声形式への書き出し"],
+  "websiteUrl": "https://tickreel.ycccompany.jp/",
+  "privacyPolicyUrl": "https://tickreel.ycccompany.jp/privacy.html",
+  "supportUrl": "https://github.com/appipinopi/tickreel/issues",
+  "notesForCertification": "runFullTrustは、利用者が指定した画面の記録、指定アプリのウィンドウ黒塗り、ローカルファイルの保存、同梱FFmpegによるメディア出力に必要です。マイクは利用者がアフレコ録音を開始したときに使用します。記録・録音・テロップを外部へ送信しません。Store版の更新はMicrosoft Storeが管理し、GitHubからEXEを差し替える更新は無効です。"
+}
