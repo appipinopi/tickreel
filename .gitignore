@@ -1,0 +1,13 @@
+node_modules/
+dist/
+release*/
+*.log
+target/
+release-*.zip
+
+artifacts/
+.env
+.env.*
+*.pfx
+*.p12
+*.key
