@@ -4,7 +4,7 @@
 
 Rust MSVC、WebView2 Runtime、FFmpegが必要です。GitHub Actionsはx64 / x86 / ARM64のネイティブ実行ファイルを個別にテストし、x64/x86自動選択インストーラーとARM64専用インストーラーをNSISで作成します。インストール先はユーザーの `%LOCALAPPDATA%\Programs\Tickreel` です。アプリ本体は `Tickreel.exe` で、アプリを閉じてから再インストールしてください。アンインストールは記録データを削除しません。
 
-CPU別のZIPと `*-portable.exe`、署名付き `update-windows-{x64,x86,arm64}.json` も生成します。更新時は実行中のアプリと同じCPU用の本体のみを受け入れます。Windows ARM64のFFmpegはBtbNのネイティブARM64ビルドです。32bit用はffmpeg-static b6.0、x64用はb6.1.1を使用します。
+CPU別のZIPと `*-portable.exe`、署名付き `update-windows-{x64,x86,arm64}.json` も生成します。更新時は実行中のアプリと同じCPU用の本体のみを受け入れます。Windows ARM64のFFmpegはBtbNのネイティブARM64ビルドです。Windows ARM64のWebMはSVT-AV1を使用し、他のCPUのWebMはVP9を使用します。32bit用はffmpeg-static b6.0、x64用はb6.1.1を使用します。
 
 ```powershell
 # 署名鍵の環境変数またはローカルの発行者鍵が必要
