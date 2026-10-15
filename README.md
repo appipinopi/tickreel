@@ -1,5 +1,4 @@
-# Tickreel Rust 1.0 — 元のUI
-
+# Tickreel Rust 1.0 —
 一日のPC作業をタイムラプスとして保存するWindows用アプリです。**記録・黒塗り・編集データ保存・マイク録音・動画生成をRustで実装**しています。以前のHTML/CSSと操作画面を再利用し、RustのWry + Windows WebView2で表示します。JavaScriptは表示と操作の橋渡しを担当し、マイク録音はRustのCPALが担当します。画面取得・ウィンドウ検出はWindows API、動画のエンコードは同梱FFmpegです。
 
 ## 起動
