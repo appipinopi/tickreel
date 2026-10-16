@@ -7,7 +7,18 @@ script="$(realpath "$0")"
 if [[ ${TICKREEL_WAYLAND_TEST_CHILD:-} != 1 ]]; then
   runtime="$(mktemp -d /tmp/tickreel-wayland.XXXXXXXX)"
   chmod 700 "$runtime"
-  trap 'rm -rf -- "$runtime"' EXIT
+  cleanup_runtime() {
+    status=$?
+    # D-Bus activated services can finish writing while the session exits.
+    # Preserve the test result and allow those processes to finish first.
+    for ((attempt=0;attempt<20;attempt++)); do
+      if rm -rf -- "$runtime" 2>/dev/null; then return "$status"; fi
+      sleep .1
+    done
+    printf 'Warning: temporary session directory remains: %s\n' "$runtime" >&2
+    return "$status"
+  }
+  trap cleanup_runtime EXIT
   # Hosted runners can keep their checkout below a private home directory.
   # Copy both inputs into the isolated runtime before dropping privileges.
   cp "$script" "$runtime/test-wayland.sh"
