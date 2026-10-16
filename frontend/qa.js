@@ -14,6 +14,9 @@
     document.querySelector('[data-signature-link="website"]').click();
     await until(() => openedLinks.length === 2);
     assert(openedLinks[1].url === 'https://tickreel.ycccompany.jp/','Official site opens through native bridge');
+    document.querySelector('[data-signature-link="works"]').click();
+    await until(() => openedLinks.length === 3);
+    assert(openedLinks[2].url === 'https://portal.88soundboard.workers.dev/','Creator works opens the shared app portal');
     assert(window.location.href === appLocation,'External links keep the workspace open');
     let rejectedLink = false;
     try { await originalOpenLink('file:///C:/Windows/system32/cmd.exe'); } catch { rejectedLink = true; }

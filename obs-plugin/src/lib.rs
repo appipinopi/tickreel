@@ -363,6 +363,9 @@ unsafe extern "C" fn creator_button(properties: Ptr, _: Ptr, data: Ptr) -> bool 
 unsafe extern "C" fn website_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
     open_signature_link(properties, data, "website")
 }
+unsafe extern "C" fn works_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
+    open_signature_link(properties, data, "works")
+}
 unsafe extern "C" fn properties(data: Ptr) -> Ptr {
     let props = (api().obs_properties_create)();
     (api().obs_properties_add_text)(props, c"info".as_ptr(), c"Records the final OBS Program, including scene changes. Independent of OBS streaming/recording. / OBSの最終出力を記録します。".as_ptr(), 3);
@@ -403,6 +406,14 @@ unsafe extern "C" fn properties(data: Ptr) -> Ptr {
     let creator =
         CString::new(format!("Made by {} ↗", app_links::signature().creator.name)).unwrap();
     (api().obs_properties_add_button)(props, c"creator".as_ptr(), creator.as_ptr(), creator_button);
+    if app_links::signature().creator.works_url.is_some() {
+        (api().obs_properties_add_button)(
+            props,
+            c"works".as_ptr(),
+            c"私が作ったもの ↗".as_ptr(),
+            works_button,
+        );
+    }
     (api().obs_properties_add_button)(
         props,
         c"website".as_ptr(),

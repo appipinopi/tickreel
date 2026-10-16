@@ -6,6 +6,8 @@
 
 開発者名・GitHub URLは共通部品の `creator.json`、アプリ名・公式サイトはTickreel側の `assets/app-signature.json` で管理します。プロフィールページの作成は不要です。
 
+**私が作ったもの ↗** は [アプリのポータル](https://portal.88soundboard.workers.dev/) を開きます。共通部品の `creator.json` 内の `worksUrl` で管理し、本体とOBS版に表示します。
+
 ## 他のアプリへ使う
 
 Rustでは `app-signature` をGit依存として追加します。HTML / Electron / WebViewでは、同じリポジトリの `web/app-signature.js` と `.css` を組み込みます。設定例と利用方法は [共通部品のREADME](https://github.com/appipinopi/app-signature#readme) を参照してください。共通部品の取得先はコミットで固定し、各アプリの配布時に同梱します。

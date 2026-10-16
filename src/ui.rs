@@ -839,6 +839,11 @@ impl eframe::App for Desktop {
                     let result = signature.open("creator");
                     self.result(result);
                 }
+                if signature.creator.works_url.is_some() && ui.link("私が作ったもの ↗").clicked()
+                {
+                    let result = signature.open("works");
+                    self.result(result);
+                }
                 for link in &signature.links {
                     if ui.link(format!("{} ↗", link.label)).clicked() {
                         let result = signature.open(&link.id);
