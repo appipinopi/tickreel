@@ -36,20 +36,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libxrandr-dev libxss-dev libgbm-dev libclang-dev libdbus-1-dev libpipewire-0.3-dev libxcb-randr0-dev xvfb fonts-noto-cjk rpm dpkg-dev
-      - name: Wayland integration test dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y sway pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-wlr dbus-x11 meson ninja-build libinih-dev libsystemd-dev libwayland-dev wayland-protocols libdrm-dev
-          # Ubuntu 24.04's xdpw 0.7 rejects software-only headless outputs.
-          # Use the same 0.8.1 backend as the local integration test, pinned to
-          # its upstream release commit. This changes the test fixture only.
-          git clone https://github.com/emersion/xdg-desktop-portal-wlr.git "$RUNNER_TEMP/tickreel-xdpw"
-          git -C "$RUNNER_TEMP/tickreel-xdpw" checkout 083aed357d5c8166aed132a76796de6847605289
-          # Upstream 0.8.1 omits unistd.h in one source; newer system headers
-          # no longer include it transitively. Supply its standard declaration.
-          CFLAGS='-include unistd.h' meson setup "$RUNNER_TEMP/tickreel-xdpw/build" "$RUNNER_TEMP/tickreel-xdpw" -Dman-pages=disabled -Dsystemd=disabled
-          ninja -C "$RUNNER_TEMP/tickreel-xdpw/build"
-          sudo install -m755 "$RUNNER_TEMP/tickreel-xdpw/build/xdg-desktop-portal-wlr" /usr/libexec/xdg-desktop-portal-wlr
       - name: Test
         run: cargo test --locked
       - name: Install bundled FFmpeg
@@ -67,14 +53,7 @@ jobs:
       - name: Wayland Portal and PipeWire integration test
         if: runner.os == 'Linux'
         run: |
-          sudo bash scripts/test-wayland.sh ./target/release/tickreel-rust
-      - name: Linux UI smoke test
-        if: runner.os == 'Linux'
-        env:
-          WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS: '1'
-          LIBGL_ALWAYS_SOFTWARE: '1'
-          XDG_SESSION_TYPE: x11
-        run: xvfb-run -a ./target/release/tickreel-rust --ui-test-update
+          docker run --rm --shm-size=512m -v "$PWD:/workspace" -w /workspace ubuntu:26.04 bash scripts/test-wayland-container.sh /workspace/target/release/tickreel-rust
       - name: Attach packages to release
         if: github.ref_type == 'tag' || inputs.release_tag != ''
         env:

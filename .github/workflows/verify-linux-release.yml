@@ -1,0 +1,43 @@
+name: Verify and attach Linux release packages
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: 'Successful package artifact run ID'
+        required: true
+      release_tag:
+        description: 'Draft release tag'
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            artifact: linux-x86_64
+          - runner: ubuntu-24.04-arm
+            artifact: linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tickreel-${{ matrix.artifact }}
+          path: packages
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+      - name: Extract exact release executable
+        run: tar -xzf packages/*.tar.gz -C packages
+      - name: Test real Wayland capture and native UI
+        run: |
+          binary=$(find packages -name tickreel -type f -print -quit)
+          docker run --rm --shm-size=512m -v "$PWD:/workspace" -w /workspace ubuntu:26.04 bash scripts/test-wayland-container.sh "/workspace/$binary"
+      - name: Attach verified packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: gh release upload "$RELEASE_TAG" packages/*.tar.gz packages/*.deb packages/*.rpm
