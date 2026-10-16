@@ -56,9 +56,14 @@ export SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -type s -name 'sway-ipc.*
 dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_CONFIG_HOME
 pipewire > "$XDG_RUNTIME_DIR/pipewire.log" 2>&1 &
 pids+=("$!")
+for ((i=0;i<100;i++)); do
+  [[ -S "$XDG_RUNTIME_DIR/pipewire-0" ]] && break
+  sleep .1
+done
+[[ -S "$XDG_RUNTIME_DIR/pipewire-0" ]] || { cat "$XDG_RUNTIME_DIR/pipewire.log"; exit 1; }
 wireplumber > "$XDG_RUNTIME_DIR/wireplumber.log" 2>&1 &
 pids+=("$!")
-/usr/libexec/xdg-desktop-portal-wlr --config "$XDG_RUNTIME_DIR/wlr.conf" > "$XDG_RUNTIME_DIR/wlr.log" 2>&1 &
+/usr/libexec/xdg-desktop-portal-wlr --loglevel DEBUG --config "$XDG_RUNTIME_DIR/wlr.conf" > "$XDG_RUNTIME_DIR/wlr.log" 2>&1 &
 pids+=("$!")
 # Let D-Bus activate the frontend portal after the configured backend owns its
 # name; starting it concurrently with activation can create two instances.
