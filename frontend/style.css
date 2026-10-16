@@ -6,3 +6,5 @@ textarea{font:inherit;width:100%;resize:vertical;border:1px solid #e0e8e5;border
 .record-row>select{width:85px;padding:8px;font-size:11px}.summary-controls{display:flex;flex-wrap:wrap;gap:10px}.summary-controls select{width:100px}.summary-controls input{width:140px}.caption-studio .section-heading{margin:0 0 12px}.caption-studio h2{font-size:13px}.caption-studio textarea{width:100%;font:inherit;resize:vertical}.caption-studio input[type=range]{width:100%}
 
 .update-panel{border-top:1px solid #eef0f1;margin-top:16px;padding-top:14px}.update-panel p{overflow-wrap:anywhere;font-size:9px;line-height:1.6;max-height:90px;overflow:auto}.update-panel .secondary{font-size:10px;padding:8px;width:100%}
+
+#app-signature{margin-top:14px;color:#647a7b}#app-signature .app-signature__status{margin:0}.version{margin-top:8px;padding-top:12px}.sidebar{overflow-y:auto}

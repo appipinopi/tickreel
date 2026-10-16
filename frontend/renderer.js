@@ -235,6 +235,11 @@ async function initializeCapture() {
   await update();
 }
 initializeCapture().catch(error => notify(error.message));
+window.appSignatureReady = (async () => {
+  const [{ mountSignature }, signature] = await Promise.all([import('./app-signature.js'), api.publicLinks()]);
+  return mountSignature($('app-signature'), { signature, onOpenLink: id => api.openPublicLink(id), onError: error => notify(error.message) });
+})();
+window.appSignatureReady.catch(error => notify(error.message));
 setInterval(update, 1500);
 
 let updateStatus=null;

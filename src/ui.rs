@@ -830,7 +830,22 @@ impl eframe::App for Desktop {
                 if ui.button("保存フォルダーを開く").clicked() {
                     native::open(&self.engine.store.root, false);
                 }
-                ui.small("v2.0 · Rust + egui");
+                ui.separator();
+                let signature = crate::app_links::signature();
+                if ui
+                    .link(format!("Made by {} ↗", signature.creator.name))
+                    .clicked()
+                {
+                    let result = signature.open("creator");
+                    self.result(result);
+                }
+                for link in &signature.links {
+                    if ui.link(format!("{} ↗", link.label)).clicked() {
+                        let result = signature.open(&link.id);
+                        self.result(result);
+                    }
+                }
+                ui.small(format!("v{}", env!("CARGO_PKG_VERSION")));
             });
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
             if let Some(job) = &snapshot.export {

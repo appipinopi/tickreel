@@ -2,6 +2,8 @@
 
 OBS Studioの最終出力（Program）を一定間隔でJPEGに記録するネイティブプラグインです。シーン切り替え・画像・テキスト・カメラを含むOBSの合成結果を記録します。配信やOBSの通常録画を開始する必要はありません。
 
+プロパティの **Made by appipinopi ↗** から開発者のGitHub、**公式サイト ↗** からTickreelのサイトを開けます。開発者表示には本体と共通の [App Signature](https://github.com/appipinopi/app-signature) を使用しています。
+
 ## 対応環境
 
 Windows 10/11 x64、OBS Studio 31以降の64bit版。OBS 32.2.2で読み込み・保存・停止・再開始・ソース削除時の終了を検証しています。ARM64ネイティブOBS、macOS、Linuxのプラグイン配布物は今回含みません。

@@ -6,6 +6,8 @@
 
 [ダウンロード](https://github.com/appipinopi/tickreel/releases/latest) · [不具合報告・要望](https://github.com/appipinopi/tickreel/issues) · [プライバシー](docs/privacy.md)
 
+Made by [appipinopi](https://github.com/appipinopi) · [公式サイト](https://tickreel.ycccompany.jp/)。アプリ内の開発者表示・リンクには、他のアプリでも再利用できる [App Signature](https://github.com/appipinopi/app-signature) を使用しています。
+
 ## 対応OSとダウンロード
 
 | OS | 配布形式 | 必要なもの・対応範囲 |

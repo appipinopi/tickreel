@@ -216,6 +216,20 @@ impl Backend {
             "アプリを終了しています。"
         );
         match request.method.as_str() {
+            "publicLinks" => Ok(json!(crate::app_links::signature())),
+            "openPublicLink" => {
+                let id = request
+                    .args
+                    .first()
+                    .and_then(Value::as_str)
+                    .context("リンクを選択してください。")?;
+                let signature = crate::app_links::signature();
+                let url = signature.resolve(id)?;
+                if !self.qa {
+                    signature.open(id)?;
+                }
+                Ok(json!({"id": id, "url": url}))
+            }
             "updateState" => Ok(json!(self.updater.status())),
             "updateCheck" => Ok(json!(self.updater.check()?)),
             "updateDownload" => {
@@ -544,6 +558,14 @@ impl Backend {
             "/renderer.js" => (
                 "text/javascript; charset=utf-8",
                 Cow::Borrowed(include_bytes!("../frontend/renderer.js").as_slice()),
+            ),
+            "/app-signature.js" => (
+                "text/javascript; charset=utf-8",
+                Cow::Borrowed(app_signature::WEB_SCRIPT.as_bytes()),
+            ),
+            "/app-signature.css" => (
+                "text/css; charset=utf-8",
+                Cow::Borrowed(app_signature::WEB_STYLE.as_bytes()),
             ),
             _ if path.starts_with("/audio/") => {
                 let requested = &path[7..];

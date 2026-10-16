@@ -42,6 +42,7 @@ with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED) as output:
                  root / 'obs-plugin/Cargo.toml', root / 'obs-plugin/Cargo.lock',
                  root / 'obs-plugin/README.md', root / 'obs-plugin/LICENSE',
                  root / 'obs-plugin/install-windows.ps1', root / 'src/model.rs', root / 'src/store.rs',
+                 root / 'src/app_links.rs', root / 'assets/app-signature.json',
                  root / 'scripts/package-obs-plugin.py', root / 'scripts/collect-licenses.py',
                  root / 'scripts/test-obs-plugin.py', root / 'Cargo.toml', root / 'Cargo.lock']:
         output.write(file, file.relative_to(root))

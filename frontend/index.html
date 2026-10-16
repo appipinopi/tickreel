@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self' blob: data:; style-src 'self'; script-src 'self'"><title>Tickreel</title><link rel="stylesheet" href="style.css"></head>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self' blob: data:; style-src 'self'; script-src 'self'"><title>Tickreel</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="app-signature.css"></head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="#"><span class="brand-icon">▥</span>tickreel<span class="brand-dot">●</span></a>
   <div class="workspace-label">YOUR WORKSPACE</div>
   <button class="nav active" id="nav-today"><span>◉</span>今日の記録</button>
   <button class="nav" id="nav-library"><span>▤</span>ライブラリ<span class="count" id="library-count">0</span></button>
-  <div class="sidebar-bottom"><div class="local-note"><span class="local-dot"></span>ローカルに保存</div><p>あなたの作業は、あなたのPCに。<br>画面データを外部に送信しません。</p><button class="folder-link" id="open-folder">↗ 保存フォルダーを開く</button><div class="update-panel"><button id="update-check" class="folder-link">↻ 更新を確認</button><p id="update-message" role="status"></p><button id="update-download" class="secondary" hidden>更新をダウンロード</button></div><div class="version">TICKREEL FREE <span>v1.0.2</span></div></div>
+  <div class="sidebar-bottom"><div class="local-note"><span class="local-dot"></span>ローカルに保存</div><p>あなたの作業は、あなたのPCに。<br>画面データを外部に送信しません。</p><button class="folder-link" id="open-folder">↗ 保存フォルダーを開く</button><div class="update-panel"><button id="update-check" class="folder-link">↻ 更新を確認</button><p id="update-message" role="status"></p><button id="update-download" class="secondary" hidden>更新をダウンロード</button></div><div id="app-signature"></div><div class="version">TICKREEL FREE <span>v1.0.2</span></div></div>
 </aside>
 <main>
   <header><div class="breadcrumb">ワークスペース <span>/</span> <b id="page-label">今日の記録</b></div><div class="date" id="today-date"></div></header>

@@ -67,6 +67,8 @@ with tempfile.TemporaryDirectory(prefix='tickreel-obs-test-') as temporary:
     assert source, 'Source registration failed'
     props = get_properties(source)
     assert props
+    assert b'Made by appipinopi' in get_description(get_property(props, b'creator'))
+    assert get_property(props, b'website'), 'Shared official site control is missing'
     assert click(get_property(props, b'start'), source)
     status = get_description(get_property(props, b'status')).decode()
     assert 'Recording' in status, status

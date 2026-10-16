@@ -3,6 +3,22 @@
   const until = async (predicate) => { for (let attempt=0;attempt<100;attempt++) { if (await predicate()) return; await new Promise(resolve=>setTimeout(resolve,100)); } throw new Error('Timed out waiting for UI'); };
   const click = async id => { document.getElementById(id).click(); await until(()=>!working); };
   try {
+    await window.appSignatureReady;
+    assert(document.querySelector('[data-signature-link="creator"]').textContent.includes('Made by appipinopi'),'Shared creator signature');
+    const openedLinks = [], originalOpenLink = api.openPublicLink;
+    api.openPublicLink = async id => { const result = await originalOpenLink(id); openedLinks.push(result); return result; };
+    const appLocation = window.location.href;
+    document.querySelector('[data-signature-link="creator"]').click();
+    await until(() => openedLinks.length === 1);
+    assert(openedLinks[0].url === 'https://github.com/appipinopi','Creator signature opens developer GitHub through native bridge');
+    document.querySelector('[data-signature-link="website"]').click();
+    await until(() => openedLinks.length === 2);
+    assert(openedLinks[1].url === 'https://tickreel.ycccompany.jp/','Official site opens through native bridge');
+    assert(window.location.href === appLocation,'External links keep the workspace open');
+    let rejectedLink = false;
+    try { await originalOpenLink('file:///C:/Windows/system32/cmd.exe'); } catch { rejectedLink = true; }
+    assert(rejectedLink,'Native bridge rejects unregistered URLs');
+    api.openPublicLink = originalOpenLink;
     if (window.location.hash.includes('wayland')) {
       await until(() => captureCapabilities.portalSelection);
       await update();
@@ -15,7 +31,7 @@
     await update();
     assert(document.querySelector('.sidebar')!==null,'original sidebar');
     assert(getComputedStyle(document.querySelector('.sidebar')).width==='230px','original sidebar geometry');
-    assert(document.getElementById('title-input')!==null,'original recording controls');const updater=await api.updateState();assert(updater.current==='1.0.1'&&['github','store'].includes(updater.channel),'Native updater status');assert(document.getElementById('update-check')!==null,'Updater controls');if(window.location.hash.includes('update')){await update();document.getElementById('toast').hidden=true;window.ipc.postMessage(JSON.stringify({id:0,method:'qaReport',args:[{success:true,checks}]}));return;}
+    assert(document.getElementById('title-input')!==null,'original recording controls');const updater=await api.updateState();assert(updater.current==='1.0.2'&&['github','store'].includes(updater.channel),'Native updater status');assert(document.getElementById('update-check')!==null,'Updater controls');if(window.location.hash.includes('update')){await update();document.getElementById('toast').hidden=true;window.ipc.postMessage(JSON.stringify({id:0,method:'qaReport',args:[{success:true,checks}]}));return;}
     await until(()=>sources.length>0);
     document.getElementById('title-input').value='UI接続テスト';
     await click('pace-four-seconds');

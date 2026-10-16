@@ -1,4 +1,6 @@
 #![allow(unsafe_op_in_unsafe_fn)]
+#[path = "../../src/app_links.rs"]
+mod app_links;
 mod ffi;
 #[path = "../../src/model.rs"]
 #[allow(dead_code)]
@@ -339,6 +341,28 @@ unsafe extern "C" fn stop_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
     controls(properties, false);
     true
 }
+unsafe fn open_signature_link(properties: Ptr, data: Ptr, id: &str) -> bool {
+    if let Err(error) = app_links::signature().open(id) {
+        let message = format!("Browser error: {error:#}");
+        if !data.is_null() {
+            *(data as *const Controller)
+                .as_ref()
+                .unwrap()
+                .message
+                .lock()
+                .unwrap() = message.clone();
+        }
+        status(properties, &message);
+        return true;
+    }
+    false
+}
+unsafe extern "C" fn creator_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
+    open_signature_link(properties, data, "creator")
+}
+unsafe extern "C" fn website_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
+    open_signature_link(properties, data, "website")
+}
 unsafe extern "C" fn properties(data: Ptr) -> Ptr {
     let props = (api().obs_properties_create)();
     (api().obs_properties_add_text)(props, c"info".as_ptr(), c"Records the final OBS Program, including scene changes. Independent of OBS streaming/recording. / OBSの最終出力を記録します。".as_ptr(), 3);
@@ -375,6 +399,15 @@ unsafe extern "C" fn properties(data: Ptr) -> Ptr {
         c"stop".as_ptr(),
         c"Stop and save / 停止して保存".as_ptr(),
         stop_button,
+    );
+    let creator =
+        CString::new(format!("Made by {} ↗", app_links::signature().creator.name)).unwrap();
+    (api().obs_properties_add_button)(props, c"creator".as_ptr(), creator.as_ptr(), creator_button);
+    (api().obs_properties_add_button)(
+        props,
+        c"website".as_ptr(),
+        c"公式サイト ↗".as_ptr(),
+        website_button,
     );
     let active = if data.is_null() {
         false
