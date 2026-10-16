@@ -6,7 +6,7 @@
 
 開発者名・GitHub URLは共通部品の `creator.json`、アプリ名・公式サイトはTickreel側の `assets/app-signature.json` で管理します。プロフィールページの作成は不要です。全OS・全配布版で、起動時と1時間ごとにGitHubの設定を取得します。
 
-**私が作ったもの ↗** は [アプリのポータル](https://portal.88soundboard.workers.dev/) を開きます。共通部品の `creator.json` 内の `worksUrl` で管理し、本体とOBS版に表示します。
+**私が作ったもの ↗** は専用の別ウィンドウを開き、開発したアプリをアイコンで一覧表示します。アイコンを押すと該当アプリのサイトを既定のブラウザーで開きます。本体の記録画面はそのまま使えます。
 
 ## 他のアプリへ使う
 
@@ -14,4 +14,6 @@ Rustでは `app-signature` をGit依存として追加します。HTML / Electro
 
 TickreelのWebViewは登録したリンクIDだけをRust側へ渡し、共通部品が既定のブラウザーで開きます。アプリの画面を外部サイトへ置き換えません。リンク設定はHTTPSでGitHubから取得し、接続失敗・不正な設定の場合は前回の有効なキャッシュ、初回は同梱設定を使用します。本体の実行ファイルの更新とは独立した仕組みです。
 
-変更する場所: [GitHubでcreator.jsonを編集](https://github.com/appipinopi/app-signature/edit/main/creator.json)。`worksUrl` を変更してmainへコミットしてください。各アプリが次回取得した時点で反映します。Windows Store版・Snap版でもこのリンク設定だけを取得します。
+変更する場所: [GitHubでcreator.jsonを編集](https://github.com/appipinopi/app-signature/edit/main/creator.json)。`apps` の一覧を編集してmainへコミットしてください。各項目の `id` は固定ID、`name` はアプリ名、`description` は説明、`url` は開くサイト、`icon` はアイコンのHTTPS URLです。配列の順番が表示順です。各アプリが次回取得した時点で反映します。Windows Store版・Snap版でもこの設定だけを取得します。
+
+Windows本体は `Tickreel.exe --creator-apps` で一覧画面だけを開くこともできます。OBS版は同梱の `tickreel-gallery.exe` から同じ画面を起動します。DLLと同じフォルダーに配置してください。

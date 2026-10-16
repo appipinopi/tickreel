@@ -4,6 +4,7 @@ mod audio;
 mod capture_platform;
 mod engine;
 mod export;
+mod gallery;
 mod model;
 #[cfg(windows)]
 mod native;
@@ -25,6 +26,18 @@ mod web_ui;
 
 fn main() {
     native::set_dpi();
+    if std::env::args().any(|arg| arg == "--creator-apps" || arg == "--creator-apps-test") {
+        let qa = std::env::args().any(|arg| arg == "--creator-apps-test");
+        if !qa {
+            app_links::start();
+        }
+        if let Err(error) = gallery::run(qa) {
+            eprintln!("{error:#}");
+            std::process::exit(1);
+        }
+        app_links::shutdown();
+        return;
+    }
     if !std::env::args().any(|arg| arg.contains("test")) {
         app_links::start();
     }

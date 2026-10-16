@@ -27,6 +27,32 @@ pub fn signature() -> Signature {
         .map(LiveSignature::snapshot)
         .unwrap_or_else(|| embedded().clone())
 }
+pub fn open_works() -> anyhow::Result<()> {
+    let current = std::env::current_exe()?;
+    let host = current
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_lowercase();
+    let executable = if host == "obs64" || host == "obs32" {
+        current
+            .parent()
+            .and_then(|path| path.parent())
+            .and_then(|path| path.parent())
+            .ok_or_else(|| anyhow::anyhow!("OBSフォルダーが見つかりません。"))?
+            .join("obs-plugins/64bit/tickreel-gallery.exe")
+    } else {
+        current
+    };
+    anyhow::ensure!(
+        executable.is_file(),
+        "アプリ一覧用の実行ファイルがありません。プラグインのZIPを再導入してください。"
+    );
+    std::process::Command::new(executable)
+        .arg("--creator-apps")
+        .spawn()?;
+    Ok(())
+}
 
 fn embedded() -> &'static Signature {
     static SIGNATURE: OnceLock<Signature> = OnceLock::new();

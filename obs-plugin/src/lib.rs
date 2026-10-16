@@ -409,8 +409,15 @@ unsafe extern "C" fn creator_button(properties: Ptr, _: Ptr, data: Ptr) -> bool 
 unsafe extern "C" fn website_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
     open_signature_link(properties, data, "website")
 }
-unsafe extern "C" fn works_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
-    open_signature_link(properties, data, "works")
+unsafe extern "C" fn works_button(properties: Ptr, _: Ptr, _data: Ptr) -> bool {
+    if let Err(error) = app_links::open_works() {
+        status(
+            properties,
+            &format!("アプリ一覧を開けませんでした: {error:#}"),
+        );
+        return true;
+    }
+    false
 }
 unsafe extern "C" fn properties(data: Ptr) -> Ptr {
     let props = (api().obs_properties_create)();

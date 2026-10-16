@@ -841,7 +841,7 @@ impl eframe::App for Desktop {
                 }
                 if signature.creator.works_url.is_some() && ui.link("私が作ったもの ↗").clicked()
                 {
-                    let result = signature.open("works");
+                    let result = crate::app_links::open_works();
                     self.result(result);
                 }
                 for link in &signature.links {

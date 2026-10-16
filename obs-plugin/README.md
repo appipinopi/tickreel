@@ -2,7 +2,7 @@
 
 OBS Studioの最終出力（Program）を一定間隔でJPEGに記録するネイティブプラグインです。OBSの通常録画の開始・停止に連動します。Tickreel自体の画像やロゴはOBSの映像に追加しません。
 
-プロパティの **Made by appipinopi ↗** から開発者のGitHub、**公式サイト ↗** からTickreelのサイトを開けます。開発者表示には本体と共通の [App Signature](https://github.com/appipinopi/app-signature) を使用しています。
+プロパティの **Made by appipinopi ↗** から開発者のGitHub、**公式サイト ↗** からTickreelのサイトを開けます。**私が作ったもの ↗** は別ウィンドウにアプリアイコンを一覧表示し、クリックしたアプリのサイトを開きます。開発者表示には本体と共通の [App Signature](https://github.com/appipinopi/app-signature) を使用しています。
 
 ## 対応環境
 
@@ -12,7 +12,7 @@ Windows 10/11 x64、OBS Studio 31以降の64bit版。OBS 32.2.2で読み込み�
 
 1. OBS Studioを終了します。
 2. `Tickreel-OBS-1.0.2-windows-x64.zip` を展開します。
-3. ZIP内の `obs-plugins` フォルダーをOBSのインストール先（通常 `C:\Program Files\obs-studio`）へコピーし、既存のフォルダーへ結合します。必要に応じてWindowsの管理者許可を承認します。
+3. ZIP内の `obs-plugins` フォルダーをOBSのインストール先（通常 `C:\Program Files\obs-studio`）へコピーし、既存のフォルダーへ結合します。DLLと `tickreel-gallery.exe` の両方をコピーしてください。一覧ウィンドウにはWebView2 Runtimeが必要です。必要に応じてWindowsの管理者許可を承認します。
 4. OBSを起動します。**ソース → ＋ → Tickreel Timelapse** が表示されれば導入完了です。
 
 PowerShellでも導入できます。OBSのフォルダーへの書き込み権限が必要です。標準のProgram Files配下へ導入する場合は管理者として開いて実行してください。
@@ -52,7 +52,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -ObsDirectory 'D:
 ```powershell
 cargo test --locked --manifest-path obs-plugin/Cargo.toml
 cargo build --release --locked --manifest-path obs-plugin/Cargo.toml
-python scripts/package-obs-plugin.py --binary <target-directory>/release/tickreel_obs.dll
+cargo build --release --locked
+python scripts/package-obs-plugin.py --binary <target-directory>/release/tickreel_obs.dll --gallery <target-directory>/release/tickreel-rust.exe
 python scripts/test-obs-plugin.py <portable-OBS-root> <target-directory>/release/tickreel_obs.dll
 ```
 

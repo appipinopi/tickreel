@@ -25,8 +25,8 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "app-signature"
-version = "0.2.0"
-source = "git+https://github.com/appipinopi/app-signature?rev=1562dfd38894c5b13a6fcd00b500e5b7712f8053#1562dfd38894c5b13a6fcd00b500e5b7712f8053"
+version = "0.3.0"
+source = "git+https://github.com/appipinopi/app-signature?rev=ddabe4b321247971c8eeba6ec31e4bf66fdf19de#ddabe4b321247971c8eeba6ec31e4bf66fdf19de"
 dependencies = [
  "anyhow",
  "reqwest",

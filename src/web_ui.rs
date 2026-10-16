@@ -226,9 +226,15 @@ impl Backend {
                 let signature = crate::app_links::signature();
                 let url = signature.resolve(id)?.to_owned();
                 if !self.qa {
-                    signature.open(id)?;
+                    if id == "works" {
+                        crate::app_links::open_works()?;
+                    } else {
+                        signature.open(id)?;
+                    }
                 }
-                Ok(json!({"id": id, "url": url}))
+                Ok(
+                    json!({"id": id, "url": url, "kind": if id=="works" { "gallery" } else { "browser" }}),
+                )
             }
             "updateState" => Ok(json!(self.updater.status())),
             "updateCheck" => Ok(json!(self.updater.check()?)),

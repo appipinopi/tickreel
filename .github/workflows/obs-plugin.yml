@@ -28,6 +28,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Plugin tests failed.' }
           cargo build --release --locked --manifest-path obs-plugin/Cargo.toml
           if ($LASTEXITCODE -ne 0) { throw 'Plugin build failed.' }
+          cargo build --release --locked
+          if ($LASTEXITCODE -ne 0) { throw 'Gallery helper build failed.' }
       - name: Verify against real OBS Studio
         shell: pwsh
         env:
@@ -44,7 +46,8 @@ jobs:
         shell: pwsh
         run: |
           $taskMeta = cargo metadata --no-deps --format-version 1 --manifest-path obs-plugin/Cargo.toml | ConvertFrom-Json
-          python scripts/package-obs-plugin.py --binary "$($taskMeta.target_directory)/release/tickreel_obs.dll"
+          $taskDesktop = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+          python scripts/package-obs-plugin.py --binary "$($taskMeta.target_directory)/release/tickreel_obs.dll" --gallery "$($taskDesktop.target_directory)/release/tickreel-rust.exe"
           if ($LASTEXITCODE -ne 0) { throw 'Plugin packaging failed.' }
       - uses: actions/upload-artifact@v4
         with:
