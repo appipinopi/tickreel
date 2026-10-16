@@ -51,6 +51,7 @@ struct Backend {
     engine: Engine,
     updater: crate::updater::Updater,
     qa: bool,
+    qa_portal_selected: AtomicBool,
     mic_public: Mutex<Option<Value>>,
     export_ids: Mutex<Vec<String>>,
     closing: AtomicBool,
@@ -246,7 +247,41 @@ impl Backend {
                         .collect::<Vec<_>>()
                 ))
             }
-            "sources" => {
+            "captureCapabilities" => Ok(
+                if self.qa && std::env::args().any(|arg| arg == "--ui-test-wayland") {
+                    json!({"portalSelection":true,"appRedaction":false,"idleDetection":false})
+                } else {
+                    serde_json::to_value(crate::capture_platform::capabilities())?
+                },
+            ),
+            "releaseSources" => {
+                anyhow::ensure!(
+                    self.engine.snapshot().current.is_none(),
+                    "記録を終了してから画面共有を終了してください。"
+                );
+                crate::capture_platform::shutdown();
+                self.qa_portal_selected.store(false, Ordering::Release);
+                Ok(Value::Null)
+            }
+            "sources" | "selectSources" => {
+                if self.qa && std::env::args().any(|arg| arg == "--ui-test-wayland") {
+                    if request.method == "selectSources" {
+                        self.qa_portal_selected.store(true, Ordering::Release);
+                    }
+                    if !self.qa_portal_selected.load(Ordering::Acquire) {
+                        return Ok(json!([]));
+                    }
+                }
+                if request.method == "selectSources" && !self.qa {
+                    anyhow::ensure!(
+                        self.engine.snapshot().current.is_none(),
+                        "記録を終了してから共有画面を選び直してください。"
+                    );
+                    #[cfg(target_os = "linux")]
+                    if crate::capture_platform::is_wayland() {
+                        crate::wayland::select()?;
+                    }
+                }
                 let protected: Vec<String> = request
                     .args
                     .first()
@@ -598,6 +633,7 @@ pub fn run() -> Result<()> {
         engine,
         updater: crate::updater::Updater::new(),
         qa,
+        qa_portal_selected: AtomicBool::new(false),
         mic_public: Mutex::new(None),
         export_ids: Mutex::new(vec![]),
         closing: AtomicBool::new(false),
@@ -617,7 +653,16 @@ pub fn run() -> Result<()> {
     }
     let mut event_loop = EventLoopBuilder::<Message>::with_user_event().build();
     let proxy = event_loop.create_proxy();
-    let window = WindowBuilder::new()
+    let icon = image::load_from_memory(include_bytes!("../assets/tickreel.png"))?.into_rgba8();
+    let (width, height) = icon.dimensions();
+    let icon = tao::window::Icon::from_rgba(icon.into_raw(), width, height)?;
+    let builder = WindowBuilder::new().with_window_icon(Some(icon.clone()));
+    #[cfg(windows)]
+    let builder = {
+        use tao::platform::windows::WindowBuilderExtWindows;
+        builder.with_taskbar_icon(Some(icon))
+    };
+    let window = builder
         .with_title("Tickreel")
         .with_inner_size(LogicalSize::new(1320.0, 900.0))
         .with_min_inner_size(LogicalSize::new(1040.0, 760.0))
@@ -664,7 +709,9 @@ pub fn run() -> Result<()> {
         })
         .with_new_window_req_handler(|_, _| wry::NewWindowResponse::Deny)
         .with_background_color((246, 247, 249, 255))
-        .with_url(if std::env::args().any(|arg| arg == "--ui-test-editor") {
+        .with_url(if std::env::args().any(|arg| arg == "--ui-test-wayland") {
+            "tickreel://localhost/#test-wayland"
+        } else if std::env::args().any(|arg| arg == "--ui-test-editor") {
             "tickreel://localhost/#editor"
         } else if std::env::args().any(|arg| arg == "--ui-test-update") {
             "tickreel://localhost/#update"

@@ -2,6 +2,8 @@ Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
+!define MUI_ICON "..\..\assets\tickreel.ico"
+!define MUI_UNICON "..\..\assets\tickreel.ico"
 !ifndef VERSION
   !error "VERSION is required"
 !endif

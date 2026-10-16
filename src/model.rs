@@ -121,7 +121,7 @@ impl Recording {
     }
     pub fn validate(&self) -> anyhow::Result<()> {
         anyhow::ensure!(
-            [5, 10, 30, 60].contains(&self.interval) && [24, 30, 60].contains(&self.fps),
+            [1, 5, 10, 30, 60].contains(&self.interval) && [15, 24, 30, 60].contains(&self.fps),
             "撮影間隔・fpsを確認してください。"
         );
         anyhow::ensure!(
@@ -253,6 +253,24 @@ pub fn period_records(records: &[Recording], date: NaiveDate, month: bool) -> Ve
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn one_minute_becomes_four_seconds() {
+        let record = Recording {
+            interval: 1,
+            fps: 15,
+            idle_speed: 1,
+            frames: 60,
+            source_ids: vec!["screen:0:0".into()],
+            ..Default::default()
+        };
+        record.validate().unwrap();
+        let restored: Recording =
+            serde_json::from_str(&serde_json::to_string(&record).unwrap()).unwrap();
+        assert_eq!(
+            selected_frames(&restored, &[]).len() as f64 / restored.fps as f64,
+            4.0
+        );
+    }
     #[test]
     fn idle_keeps_transitions() {
         let record = Recording {

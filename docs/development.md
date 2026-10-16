@@ -4,7 +4,7 @@
 
 ## 起動
 
-`release-rust-1.0.0\Tickreel.exe` を起動してください。`ffmpeg.exe` を同じフォルダーに置いたまま使います。配布用ZIPは展開してから起動します。開いている旧版は先に閉じてください。Electron・Node.jsは実行時に不要です。WindowsのWebView2 Runtimeが必要です。
+`release-rust-1.0.1\Tickreel.exe` を起動してください。`ffmpeg.exe` を同じフォルダーに置いたまま使います。配布用ZIPは展開してから起動します。開いている旧版は先に閉じてください。Electron・Node.jsは実行時に不要です。WindowsのWebView2 Runtimeが必要です。
 
 1. 制作の種類（お絵描き / 開発）、記録するモニター、撮影間隔、fpsを選びます。
 2. 黒塗りするアプリ、複数画面の並べ方、無操作判定と早送り倍率を選びます。
@@ -13,7 +13,8 @@
 
 ## 機能
 
-- 5 / 10 / 30 / 60秒間隔で記録。24 / 30 / 60fpsのフルHD動画を生成。
+- 1 / 5 / 10 / 30 / 60秒間隔で記録。15 / 24 / 30 / 60fpsのフルHD動画を生成。
+- 「1分 → 約4秒（15倍速）」で1秒間隔・15fps・無操作の追加早送りなしを一括選択できます。エンドカードは別途3秒です。
 - 最大8モニターをグリッドまたは横並びで同時記録。異なる画面比率には余白を入れます。
 - 指定アプリの表示中のウィンドウを、フレームを保存する前に黒塗り。位置取得に失敗すると記録を停止します。
 - マウス・キーボードの無操作が1 / 2 / 5分以上の区間を識別し、生成時に追加で4 / 8 / 16倍に圧縮します。倍率はあとから変更できます。
@@ -49,7 +50,7 @@ cargo build --release
 powershell -ExecutionPolicy Bypass -File scripts/build-rust.ps1 -FfmpegPath C:\tools\ffmpeg.exe
 ```
 
-ビルドスクリプトは `release-rust-1.0.0` にアプリ、FFmpeg、説明・ライセンスを配置し、`Tickreel-1.0.0-windows-x64.zip` を作ります。ビルド先のアプリを閉じてから実行してください。開発時は `TICKREEL_FFMPEG` 環境変数でFFmpegのパスを指定できます。初回の依存ライブラリ取得にはネットワークが必要です。
+ビルドスクリプトは `release-rust-1.0.1` にアプリ、FFmpeg、説明・ライセンスを配置し、`Tickreel-1.0.1-windows-x64.zip` を作ります。ビルド先のアプリを閉じてから実行してください。開発時は `TICKREEL_FFMPEG` 環境変数でFFmpegのパスを指定できます。初回の依存ライブラリ取得にはネットワークが必要です。
 
 `--self-test` はWindowsの画面取得をメモリ上で検証し、合成画像とテスト音声で黒塗り・動画生成・音声合成・エンドカード・期間まとめ・データ取り込み・削除を確認します。実際の画面画像や会話をテスト用記録に保存しません。`--ui-test` / `--ui-test-editor` は隔離した合成画面・音声で実際のUIボタンからRust処理を検証し、WebView2の描画を直接取得して確認画像を保存します。
 
@@ -85,3 +86,16 @@ powershell -ExecutionPolicy Bypass -File scripts/build-rust.ps1 -FfmpegPath C:\t
 GitHub版は起動時にGitHub Releasesへ更新の有無を問い合わせます。画面・録音・記録データは送信しません。公開リリースのバージョン情報取得と更新EXEのダウンロードにネット接続を使います。サイドバーから更新を確認・ダウンロードでき、終了時に署名検証済みの新版へ差し替えます。Store版はMicrosoft Storeが更新を管理します。
 
 配布方法・署名鍵・Storeパッケージ作成手順は [docs/distribution.md](docs/distribution.md) を参照してください。
+
+
+## v1.0.1: Waylandの画面共有
+
+LinuxのWaylandセッション（`XDG_SESSION_TYPE=wayland` または `WAYLAND_DISPLAY`）では、ScreenCast Portalで許可されたPipeWireストリームを使用します。Xwaylandの有無には依存しません。「共有する画面を選ぶ」で選択し、許可された画面だけをプレビュー・記録します。選択のキャンセル時には既存の共有を維持します。共有は「画面共有を終了」またはアプリ終了で解除します。許可を取り消した場合・ストリームの停止時には、古いフレームを保存せず記録を一時停止します。
+
+- 必須: PipeWire、xdg-desktop-portal、デスクトップに対応したScreenCastバックエンド。GNOMEは `xdg-desktop-portal-gnome`、KDEは `xdg-desktop-portal-kde`、wlroots系は `xdg-desktop-portal-wlr` 等。共有画面数はバックエンドの対応範囲で最大8枚です。
+- Waylandは他アプリのウィンドウ位置や全体の入力情報を提供しないため、アプリ別黒塗りと無操作の自動早送りを無効にします。以前の黒塗り設定を指定した記録要求も拒否します。
+- フレームはメモリ上で最新の1枚だけ保持します。ピクセルサイズはPipeWireの交渉結果を使用し、行のパディング・オフセット・RGB/BGR変換を処理します。
+- 検証: `cargo test --locked`、`bash scripts/test-wayland.sh target/debug/tickreel-rust`。後者は専用のheadless SwayとD-Busセッション内で実際のPortal許可・PipeWire画像取得・共有解除を確認し、普段の画面を記録しません。
+- GNOME / KDE、複数モニター、HDR、各ディストリビューションでの実機確認は別途必要です。
+
+参照: [ScreenCast Portal仕様](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.ScreenCast.html)。

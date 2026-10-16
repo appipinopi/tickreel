@@ -213,6 +213,13 @@ impl Engine {
     }
     pub fn start(&self, mut record: Recording) -> Result<()> {
         record.validate()?;
+        if crate::capture_platform::is_wayland() {
+            anyhow::ensure!(
+                record.protected_apps.is_empty(),
+                "Waylandではアプリ別の黒塗りに対応していません。"
+            );
+            record.idle_speed = 1;
+        }
         let monitors = native::monitors()?;
         anyhow::ensure!(
             record
@@ -570,6 +577,42 @@ fn self_test_impl(capture_desktop: bool) -> Result<()> {
         )
         .is_err(),
         "音声がない出力の検証失敗"
+    );
+    let mut slow = record.clone();
+    slow.id = uuid::Uuid::new_v4().to_string();
+    slow.interval = 1;
+    slow.fps = 15;
+    slow.idle_speed = 1;
+    slow.frames = 0;
+    slow.narration_path = None;
+    slow.validate()?;
+    store.save(&slow)?;
+    for _ in 0..60 {
+        store.frame(&mut slow, &image, true)?;
+    }
+    let four_seconds = export::generate(
+        &store,
+        &[slow],
+        &root.path().join("four-seconds.mp4"),
+        &Edit {
+            bgm: "none".into(),
+            ..Default::default()
+        },
+        |_| {},
+    )?;
+    let slow_probe = export::hidden_command(&export::ffmpeg())
+        .args(["-hide_banner", "-i"])
+        .arg(&four_seconds.path)
+        .args(["-f", "null", "-"])
+        .output()?;
+    let slow_info = String::from_utf8_lossy(&slow_probe.stderr);
+    anyhow::ensure!(
+        four_seconds.body_duration == 4.0
+            && four_seconds.duration == 7.0
+            && slow_probe.status.success()
+            && slow_info.contains("15 fps")
+            && slow_info.contains("Duration: 00:00:07.00"),
+        "1分 → 4秒・15fpsの動画生成に失敗しました。"
     );
     let mut second = record.clone();
     second.id = uuid::Uuid::new_v4().to_string();

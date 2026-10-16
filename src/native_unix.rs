@@ -27,14 +27,17 @@ pub fn set_dpi() {}
 fn supported_session() -> Result<()> {
     #[cfg(target_os = "linux")]
     ensure!(
-        std::env::var_os("DISPLAY").is_some()
-            && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() != "wayland",
-        "Linux版の画面記録はX11セッションに対応しています。ログイン画面でXorg/X11を選んでください。Waylandでの記録はまだ対応していません。"
+        crate::capture_platform::is_wayland() || std::env::var_os("DISPLAY").is_some(),
+        "画面セッションが見つかりません。X11またはWaylandのデスクトップから起動してください。"
     );
     Ok(())
 }
 pub fn monitors() -> Result<Vec<Monitor>> {
     supported_session()?;
+    #[cfg(target_os = "linux")]
+    if crate::capture_platform::is_wayland() {
+        return crate::wayland::monitors();
+    }
     let mut output = vec![];
     for monitor in
         xcap::Monitor::all().context("画面を取得できません。画面収録の権限を確認してください。")?
@@ -55,6 +58,10 @@ pub fn monitors() -> Result<Vec<Monitor>> {
 }
 pub fn windows() -> Result<Vec<Window>> {
     supported_session()?;
+    ensure!(
+        !crate::capture_platform::is_wayland(),
+        "Waylandではアプリ別の黒塗りに対応していません。共有する画面に個人情報が含まれないことを確認してください。"
+    );
     let mut output = vec![];
     for window in
         xcap::Window::all().context("ウィンドウを取得できません。黒塗りのため記録を停止します。")?
@@ -77,6 +84,10 @@ pub fn windows() -> Result<Vec<Window>> {
 }
 pub fn capture(monitor: &Monitor) -> Result<RgbImage> {
     supported_session()?;
+    #[cfg(target_os = "linux")]
+    if crate::capture_platform::is_wayland() {
+        return crate::wayland::capture(monitor);
+    }
     #[cfg(target_os = "macos")]
     ensure!(
         mac::capture_allowed(),
@@ -121,6 +132,9 @@ fn screen_state() -> Result<(u32, bool)> {
 pub fn idle_seconds() -> u32 {
     #[cfg(target_os = "linux")]
     {
+        if crate::capture_platform::is_wayland() {
+            return 0;
+        }
         screen_state().map(|v| v.0).unwrap_or(0)
     }
     #[cfg(target_os = "macos")]
@@ -131,6 +145,9 @@ pub fn idle_seconds() -> u32 {
 pub fn desktop_unlocked() -> bool {
     #[cfg(target_os = "linux")]
     {
+        if crate::capture_platform::is_wayland() {
+            return crate::wayland::unlocked();
+        }
         screen_state().map(|v| v.1).unwrap_or(false)
     }
     #[cfg(target_os = "macos")]

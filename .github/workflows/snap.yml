@@ -8,6 +8,17 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Linux libraries and packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libxrandr-dev libxss-dev libgbm-dev libclang-dev libdbus-1-dev libpipewire-0.3-dev libxcb-randr0-dev rpm dpkg-dev
+      - name: Prepare current Linux payload
+        run: |
+          cargo test --locked
+          npm install --no-save --package-lock=false ffmpeg-static@5.3.0
+          bash scripts/build-unix.sh
       - uses: snapcore/action-build@v1
         id: snapcraft
       - uses: actions/upload-artifact@v4

@@ -17,6 +17,21 @@ def replace_once(recipe, field, value, original_pattern=r".*"):
     return result
 
 
+def pin_recipe(recipe, version, url, checksum):
+    recipe = replace_once(recipe, "version", f"'{version}'")
+    # Standalone Snap builds use a tested local payload; Store updates pin the
+    # exact published tarball instead. Leave the separate desktop part alone.
+    recipe = replace_once(recipe, "source", url,
+                          r"(?:https://github\.com/appipinopi/tickreel/releases/download/\S+|dist/Tickreel-linux-x86_64)")
+    checksum_fields = re.findall(r"(?m)^\s*source-checksum:", recipe)
+    if checksum_fields:
+        return replace_once(recipe, "source-checksum", f"sha256/{checksum}")
+    source_line = f"    source: {url}"
+    if recipe.count(source_line) != 1:
+        raise ValueError("Expected one release payload source")
+    return recipe.replace(source_line, f"{source_line}\n    source-checksum: sha256/{checksum}", 1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", required=True)
@@ -59,9 +74,7 @@ def main():
         raise ValueError("Downloaded payload does not match the GitHub asset digest")
     path = root / "snap/snapcraft.yaml"
     recipe = path.read_text(encoding="utf-8")
-    recipe = replace_once(recipe, "version", f"'{version}'")
-    recipe = replace_once(recipe, "source", expected_url, r"https://github\.com/appipinopi/tickreel/releases/download/\S+")
-    recipe = replace_once(recipe, "source-checksum", f"sha256/{checksum}")
+    recipe = pin_recipe(recipe, version, expected_url, checksum)
     path.write_text(recipe, encoding="utf-8")
     print(f"Pinned Snap payload {version}: sha256/{checksum}")
 

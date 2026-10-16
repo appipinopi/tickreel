@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id), api = window.tickreel;
+let captureCapabilities = { portalSelection: false, appRedaction: true, idleDetection: true };
 let state = { current: null, recordings: [], exportState: null }, sources = [], selectedDetail = null, working = false, toastTimer, lastError;
 let plan = null, playing = null, playStarted = 0, playPosition = 0, previewBusy = false, previewRequest = 0;
 let recorder = null, micStream = null, micTimer = null, micStatusTimer = null, micStarted = 0, audioUrl = null;
@@ -9,14 +10,14 @@ const selectedScreens = () => [...new Set([$('source-select').value, ...Array.fr
 function notify(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6500); }
 async function action(callback) { if (working) return; working = true; render(); try { await callback(); } catch (error) { notify(error.message.replace(/^Error invoking remote method '[^']+': Error: /, '')); } finally { await update(); working = false; render(); } }
 function showView(library) { $('today-view').hidden = library; $('library-view').hidden = !library; $('nav-today').classList.toggle('active', !library); $('nav-library').classList.toggle('active', library); $('page-label').textContent = library ? 'ライブラリ' : '今日の記録'; }
-function estimate() { $('estimate').textContent = `約${duration(8 * 3600 / Number($('interval-select').value) / Number($('fps-select').value))}の動画に`; }
+function estimate() { $('pace-estimate').textContent = `1分の作業 → 約${(60 / Number($('interval-select').value) / Number($('fps-select').value)).toLocaleString('ja-JP', { maximumFractionDigits: 2 })}秒（無操作の追加早送り・エンドカードを除く）`;  $('estimate').textContent = `約${duration(8 * 3600 / Number($('interval-select').value) / Number($('fps-select').value))}の動画に`; }
 function choice(value, label, className, checked = false) {
   const row = document.createElement('label'); row.className = 'choice-item'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = value; input.className = className; input.checked = checked;
   const span = document.createElement('span'); span.textContent = label; span.title = label; row.append(input, span); return row;
 }
-async function loadSources() {
+async function loadSources(select = false) {
   const previous = $('source-select').value, checked = selectedScreens();
-  sources = await api.sources(selectedApps()); $('source-select').replaceChildren(); $('monitor-list').replaceChildren();
+  sources = await (select ? api.selectSources(selectedApps()) : api.sources(selectedApps())); $('source-select').replaceChildren(); $('monitor-list').replaceChildren();
   for (const [index, source] of sources.entries()) {
     const option = document.createElement('option'); option.value = source.id; option.textContent = `ディスプレイ ${index + 1} · ${source.name}`; $('source-select').append(option);
     const row = choice(source.id, `ディスプレイ ${index + 1} · ${source.name}`, 'monitor-choice', checked.includes(source.id) && source.id !== previous); row.querySelector('input').onchange = showSource; $('monitor-list').append(row);
@@ -26,6 +27,7 @@ async function loadSources() {
   showSource();
 }
 async function loadWindows() {
+  if (!captureCapabilities.appRedaction) { $('privacy-list').replaceChildren(); $('privacy-status').textContent = 'Waylandではアプリ別の黒塗りは利用できません'; return; }
   const previous = selectedApps(), windows = await api.windows(), apps = new Map();
   for (const item of windows) if (!apps.has(item.process)) apps.set(item.process, item.title);
   // Keep selected apps even when closed; future windows from the same app stay protected.
@@ -79,8 +81,10 @@ function render() {
   $('elapsed').textContent = time(current?.activeMs || 0); $('frames').textContent = `${(current?.frames || 0).toLocaleString()} 枚`; $('video-duration').textContent = duration((current?.frames || 0) / (current?.fps || Number($('fps-select').value)));
   $('record-button').textContent = current ? '■ 記録を終了' : '● 記録を開始'; $('record-button').classList.toggle('stop', Boolean(current)); $('record-button').disabled = working || (!current && !sources.length);
   $('pause-button').hidden = !current; $('pause-button').textContent = paused ? '▶ 記録を再開' : 'Ⅱ 一時停止'; $('pause-button').disabled = working;
-  for (const id of ['title-input', 'category-select', 'source-select', 'interval-select', 'fps-select', 'refresh-sources', 'refresh-windows', 'layout-select', 'idle-threshold', 'idle-speed']) $(id).disabled = Boolean(current) || working;
+  for (const id of ['title-input', 'category-select', 'source-select', 'interval-select', 'fps-select', 'pace-four-seconds', 'select-portal-sources', 'release-portal-sources', 'refresh-sources', 'refresh-windows', 'layout-select', 'idle-threshold', 'idle-speed']) $(id).disabled = Boolean(current) || working;
   for (const input of document.querySelectorAll('.monitor-choice,.privacy-choice')) input.disabled = Boolean(current) || working;
+  if (!captureCapabilities.appRedaction) $('refresh-windows').disabled = true;
+  if (!captureCapabilities.idleDetection) { $('idle-threshold').disabled = true; $('idle-speed').disabled = true; }
   $('action-note').textContent = current ? paused ? '再開すると、続きから記録します' : `${current.interval}秒ごとに保存 · 黒塗り${(current.protectedApps || []).length}アプリ` : '準備ができたら、記録を始めましょう';
   $('preview-overlay').hidden = !current; $('overlay-status').textContent = paused ? 'PAUSED' : 'REC'; $('overlay-time').textContent = time(current?.activeMs || 0);
   if (current) $('source-label').textContent = current.sourceName;
@@ -192,7 +196,10 @@ $('record-button').onclick = () => action(async () => {
   else { await api.start({ title: $('title-input').value, sourceId: $('source-select').value, sourceIds: selectedScreens(), category: $('category-select').value, interval: Number($('interval-select').value), fps: Number($('fps-select').value), protectedApps: selectedApps(), layout: $('layout-select').value, idleThreshold: Number($('idle-threshold').value), idleSpeed: Number($('idle-speed').value) }); notify('記録を開始しました。'); }
 });
 $('pause-button').onclick = () => action(() => state.current?.status === 'paused' ? api.resume() : api.pause());
-$('refresh-sources').onclick = () => action(loadSources); $('refresh-windows').onclick = () => action(loadWindows); $('source-select').onchange = showSource;
+$('select-portal-sources').onclick = () => action(() => loadSources(true));
+$('release-portal-sources').onclick = () => action(async () => { await api.releaseSources(); await loadSources(); });
+$('refresh-sources').onclick = () => action(() => loadSources(captureCapabilities.portalSelection)); $('refresh-windows').onclick = () => action(loadWindows); $('source-select').onchange = showSource;
+$('pace-four-seconds').onclick = () => { $('interval-select').value = '1'; $('fps-select').value = '15'; $('idle-speed').value = '1'; estimate(); };
 $('interval-select').onchange = estimate; $('fps-select').onchange = estimate;
 $('category-select').onchange = () => $('title-input').placeholder = $('category-select').value === 'development' ? '例：Webアプリ開発の一日' : '例：イラスト制作の一日';
 $('open-folder').onclick = () => action(() => api.folder()); $('nav-today').onclick = () => showView(false); $('nav-library').onclick = $('view-all').onclick = () => showView(true);
@@ -212,7 +219,22 @@ $('summary-generate').onclick = () => action(async () => { await api.summary({ p
 window.addEventListener('beforeunload', event => { if (recorder) { event.preventDefault(); event.returnValue = ''; } });
 const today = new Date(); $('today-date').textContent = today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }); $('summary-date').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 estimate();
-Promise.allSettled([loadSources(), loadWindows()]).then(results => { results.forEach(result => { if (result.status === 'rejected') notify(result.reason.message); }); return update(); });
+async function initializeCapture() {
+  captureCapabilities = await api.captureCapabilities();
+  if (captureCapabilities.portalSelection) {
+    $('select-portal-sources').hidden = false;
+    $('release-portal-sources').hidden = false;
+    $('capture-notice').hidden = false;
+    $('capture-notice').textContent = 'Wayland: OSの画面共有ダイアログで記録する画面を選びます。共有は「画面共有を終了」またはアプリ終了まで続きます。アプリ別の黒塗りと無操作の自動早送りは利用できません。';
+    $('refresh-sources').title = '共有する画面を選び直す';
+    $('refresh-sources').setAttribute('aria-label', '共有する画面を選び直す');
+  }
+  if (!captureCapabilities.idleDetection) $('idle-speed').value = '1';
+  const results = await Promise.allSettled([loadSources(), loadWindows()]);
+  results.forEach(result => { if (result.status === 'rejected') notify(result.reason.message); });
+  await update();
+}
+initializeCapture().catch(error => notify(error.message));
 setInterval(update, 1500);
 
 let updateStatus=null;

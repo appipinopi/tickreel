@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod audio;
+mod capture_platform;
 mod engine;
 mod export;
 mod model;
@@ -15,10 +16,23 @@ mod updater;
 #[cfg(not(windows))]
 #[path = "updater_unix.rs"]
 mod updater;
+#[cfg(target_os = "linux")]
+mod wayland;
+#[cfg(any(target_os = "linux", test))]
+mod wayland_frame;
 mod web_ui;
 
 fn main() {
     native::set_dpi();
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|arg| arg == "--wayland-self-test") {
+        if let Err(error) = wayland::self_test() {
+            eprintln!("{error:#}");
+            std::process::exit(1);
+        }
+        println!("PASS: Wayland portal selection, PipeWire frames, session reuse and release");
+        return;
+    }
     if std::env::args().any(|arg| arg == "--export-self-test") {
         if let Err(error) = engine::export_self_test() {
             eprintln!("{error:#}");
@@ -72,6 +86,7 @@ fn main() {
     } else {
         web_ui::run()
     };
+    capture_platform::shutdown();
     if let Err(error) = result {
         rfd::MessageDialog::new()
             .set_title("Tickreel")

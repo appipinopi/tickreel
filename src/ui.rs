@@ -81,7 +81,13 @@ pub fn run() -> Result<()> {
     let windows = native::windows().unwrap_or_default();
     let mut options = Recording::default();
     options.title.clear();
-    options.source_ids = vec![monitors[0].id.clone()];
+    options.source_ids = monitors
+        .first()
+        .map(|monitor| vec![monitor.id.clone()])
+        .unwrap_or_default();
+    if crate::capture_platform::is_wayland() {
+        options.idle_speed = 1;
+    }
     let desktop = Desktop {
         engine,
         page: Page::Today,
@@ -108,6 +114,9 @@ pub fn run() -> Result<()> {
     };
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_icon(eframe::icon_data::from_png_bytes(include_bytes!(
+                "../assets/tickreel.png"
+            ))?)
             .with_inner_size([1320.0, 940.0])
             .with_min_inner_size([1020.0, 720.0]),
         ..Default::default()
@@ -377,17 +386,53 @@ impl Desktop {
                             "interval",
                             "キャプチャ間隔",
                             &mut self.options.interval,
-                            &[(5, "5秒"), (10, "10秒"), (30, "30秒"), (60, "60秒")],
+                            &[
+                                (1, "1秒"),
+                                (5, "5秒"),
+                                (10, "10秒"),
+                                (30, "30秒"),
+                                (60, "60秒"),
+                            ],
                         );
                         choice(
                             ui,
                             "fps",
                             "動画のフレームレート",
                             &mut self.options.fps,
-                            &[(24, "24 fps"), (30, "30 fps"), (60, "60 fps")],
+                            &[
+                                (15, "15 fps"),
+                                (24, "24 fps"),
+                                (30, "30 fps"),
+                                (60, "60 fps"),
+                            ],
                         );
+                        if ui.button("1分 → 約4秒（15倍速）").clicked() {
+                            self.options.interval = 1;
+                            self.options.fps = 15;
+                            self.options.idle_speed = 1;
+                        }
                         ui.separator();
                         ui.label("記録するモニター（最大8画面）");
+                        #[cfg(target_os = "linux")]
+                        if crate::capture_platform::is_wayland() {
+                            ui.small(
+                                "Waylandではアプリ別の黒塗り・無操作の自動早送りは利用できません。",
+                            );
+                            if ui.button("共有する画面を選ぶ").clicked() {
+                                let result =
+                                    crate::wayland::select().and_then(|()| native::monitors());
+                                if let Some(monitors) = self.result(result) {
+                                    self.options.source_ids =
+                                        monitors.iter().map(|m| m.id.clone()).collect();
+                                    self.monitors = monitors;
+                                }
+                            }
+                            if ui.button("画面共有を終了").clicked() {
+                                crate::wayland::release();
+                                self.monitors.clear();
+                                self.options.source_ids.clear();
+                            }
+                        }
                         for monitor in &self.monitors {
                             let mut selected = self.options.source_ids.contains(&monitor.id);
                             if ui.checkbox(&mut selected, &monitor.name).changed() {
@@ -424,7 +469,7 @@ impl Desktop {
         ui.add_space(16.0);
         card(ui, |ui| {
             ui.heading("プライバシーと無操作の早送り");
-            ui.add_enabled_ui(snapshot.current.is_none(),|ui|{ui.horizontal(|ui|{if ui.button("アプリ一覧を更新").clicked(){let result=native::windows();if let Some(windows)=self.result(result){self.windows=windows;}}ui.label("指定アプリの表示中のウィンドウを保存前に黒塗り");});
+            ui.add_enabled_ui(snapshot.current.is_none() && !crate::capture_platform::is_wayland(),|ui|{ui.horizontal(|ui|{if ui.button("アプリ一覧を更新").clicked(){let result=native::windows();if let Some(windows)=self.result(result){self.windows=windows;}}ui.label("指定アプリの表示中のウィンドウを保存前に黒塗り");});
             let mut apps:BTreeMap<String,String>=BTreeMap::new();for window in &self.windows{if !window.title.is_empty(){apps.entry(window.process.clone()).or_insert(window.title.clone());}}for selected in &self.options.protected_apps{apps.entry(selected.clone()).or_insert("現在ウィンドウなし".into());}
             egui::ScrollArea::vertical().id_salt("privacy").max_height(140.0).show(ui,|ui|{for(process,title)in apps{let mut selected=self.options.protected_apps.contains(&process);if ui.checkbox(&mut selected,format!("{process} · {title}")).changed(){if selected{self.options.protected_apps.push(process);}else{self.options.protected_apps.retain(|name|name!=&process);}}}});
             ui.horizontal(|ui|{choice(ui,"threshold","無操作の判定",&mut self.options.idle_threshold,&[(60,"1分"),(120,"2分"),(300,"5分")]);choice(ui,"idle","追加の早送り",&mut self.options.idle_speed,&[(1,"なし"),(4,"4倍"),(8,"8倍"),(16,"16倍")]);});ui.small("位置検出に失敗すると記録を停止します。ビルド・描画の待ち時間も無操作に含まれます。");});

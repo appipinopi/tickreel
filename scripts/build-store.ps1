@@ -23,18 +23,17 @@ try {
   $taskAssets = Join-Path $taskStage 'Assets'
   New-Item -ItemType Directory -Path $taskAssets -Force | Out-Null
   Add-Type -AssemblyName System.Drawing
+  $taskLogo = [System.Drawing.Image]::FromFile((Join-Path $taskWorkspace 'assets\tickreel.png'))
+  try {
   foreach ($taskSize in @(44,50,150)) {
     $taskBitmap = New-Object System.Drawing.Bitmap($taskSize,$taskSize)
     $taskGraphics = [System.Drawing.Graphics]::FromImage($taskBitmap)
-    $taskGraphics.Clear([System.Drawing.Color]::FromArgb(20,123,112))
-    $taskFont = New-Object System.Drawing.Font('Segoe UI',($taskSize * 0.50),[System.Drawing.FontStyle]::Bold,[System.Drawing.GraphicsUnit]::Pixel)
-    $taskFormat = New-Object System.Drawing.StringFormat
-    $taskFormat.Alignment = [System.Drawing.StringAlignment]::Center
-    $taskFormat.LineAlignment = [System.Drawing.StringAlignment]::Center
-    $taskGraphics.DrawString('T',$taskFont,[System.Drawing.Brushes]::White,(New-Object System.Drawing.RectangleF(0,0,$taskSize,$taskSize)),$taskFormat)
+    $taskGraphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $taskGraphics.DrawImage($taskLogo,0,0,$taskSize,$taskSize)
     $taskBitmap.Save((Join-Path $taskAssets ('Logo' + $taskSize + '.png')),[System.Drawing.Imaging.ImageFormat]::Png)
-    $taskFormat.Dispose(); $taskFont.Dispose(); $taskGraphics.Dispose(); $taskBitmap.Dispose()
+    $taskGraphics.Dispose(); $taskBitmap.Dispose()
   }
+  } finally { $taskLogo.Dispose() }
   $taskName = [System.Security.SecurityElement]::Escape($IdentityName)
   $taskPublisher = [System.Security.SecurityElement]::Escape($Publisher)
   $taskDisplay = [System.Security.SecurityElement]::Escape($PublisherDisplayName)

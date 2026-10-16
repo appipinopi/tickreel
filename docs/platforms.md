@@ -31,7 +31,7 @@ Retinaのキャプチャは、ウィンドウ位置と一致する論理座標�
 
 ## Linux
 
-最初の対応はX11セッションです。Waylandの権限・セッション管理は未実装のため、Waylandでは記録を開始しません。
+X11とWaylandに対応します。WaylandではScreenCast Portalの画面選択とPipeWireによる記録を使用します。PipeWire・xdg-desktop-portal・デスクトップに合ったPortalバックエンド（GNOME / KDE / wlr等）が必要です。Waylandではアプリ別黒塗り・無操作の自動早送りは利用できません。
 
 Ubuntu 24.04以降での開発依存:
 
@@ -44,16 +44,17 @@ bash scripts/build-unix.sh
 
 .deb / .rpm / tar.gzをx64・ARM64のネイティブUbuntu 24.04ランナーで生成します。.debの依存関係は実際のELFからdpkg-shlibdepsで計算します。.rpmもELF依存関係を収集し、glibc 2.39以降を要求します。RPMは各ディストリビューションのGUIでの追加確認が必要なプレビューです。アプリ・FFmpeg・依存ライブラリの通知は `/opt/tickreel`、ランチャーは `/usr/share/applications/tickreel.desktop` に配置します。
 
-tar.gzはGTK 3・WebKitGTK 4.1・ALSA・X11関連の実行時ライブラリを利用します。依存なしの形式ではありません。リリース用はUbuntu 24.04上でビルドします。Linuxのロック検知はX11 Screen Saver拡張に基づき、デスクトップ環境ごとの連動は実機での確認が必要です。macOS・Linuxでの自動スリープ抑止は未実装です。
+tar.gzはGTK 3・WebKitGTK 4.1・ALSA・X11関連の実行時ライブラリを利用します。依存なしの形式ではありません。リリース用はUbuntu 24.04上でビルドします。X11のロック検知はScreen Saver拡張、Waylandはlogindのロック状態と共有ストリームの状態を使用し、デスクトップ環境ごとの連動は実機での確認が必要です。macOS・Linuxでの自動スリープ抑止は未実装です。
 
 ## Snap
 
-publisher `appipinopi` に名前 `tickreel` を登録済みです。Storeの公開リビジョンはまだありません。試作SnapはGitHub Releasesへ添付しています。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。GitHub Releasesの検証済みLinuxパッケージをSHA-256で照合して取り込みます。新版を配信する際は、source URL・checksum・versionを一緒に更新してください。
+publisher `appipinopi` に名前 `tickreel` を登録済みです。v1.0.0をlatest/edgeへ公開済みです。`snap/snapcraft.yaml`を用意しています。strict confinement / core24 / GNOME extension / amd64が最初の構成です。単独ビルドは `scripts/build-unix.sh` で用意した `dist/Tickreel-linux-x86_64` を取り込みます。Store更新では `scripts/prepare-snap-release.py` が公開ReleaseのURL・SHA-256・versionをまとめて設定します。
 
 ```sh
+bash scripts/build-unix.sh
 snapcraft
 snapcraft login
-snapcraft upload tickreel_1.0.0_amd64.snap --release=edge
+snapcraft upload tickreel_1.0.1_amd64.snap --release=edge
 ```
 
 実機でのインストールとプラグ接続を確認するまではstableへ公開しません。録音には `sudo snap connect tickreel:audio-record` が必要です。更新はsnapdが管理します。

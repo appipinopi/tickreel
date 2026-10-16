@@ -59,9 +59,10 @@ Maintainer: appipinopi <appipinopi@users.noreply.github.com>
 Homepage: https://github.com/appipinopi/tickreel
 Installed-Size: {size}
 Depends: {depends}
+Recommends: pipewire, xdg-desktop-portal
 Description: Local desktop work timelapse recorder
  Record drawing and development workflows with captions, narration and music.
- Screen capture currently requires an X11 desktop session.
+ Screen capture supports X11 and Wayland (ScreenCast portal and PipeWire).
 ''')
     deb = dist / f'Tickreel-{version}-linux-{deb_arch}.deb'
     subprocess.run(['dpkg-deb', '--root-owner-group', '--build', str(stage), str(deb)], check=True)
@@ -81,8 +82,10 @@ BuildArch: {rpm_arch}
 # Ubuntu-built preview: explicit runtime sonames plus the build's glibc baseline.
 Requires: libc.so.6(GLIBC_2.39)(64bit)
 AutoReqProv: yes
+Recommends: pipewire
+Recommends: xdg-desktop-portal
 %description
-Record desktop work with captions, narration and music. X11 capture required.
+Record desktop work with captions, narration and music. X11 and Wayland capture supported (ScreenCast portal and PipeWire).
 %prep
 %build
 %install

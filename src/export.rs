@@ -187,7 +187,7 @@ pub fn generate(
         !records.is_empty()
             && records
                 .iter()
-                .all(|record| record.frames > 0 && [24, 30, 60].contains(&record.fps)),
+                .all(|record| record.frames > 0 && [15, 24, 30, 60].contains(&record.fps)),
         "保存フレームがありません。fpsを確認してください。"
     );
     let format = output_format(destination)?;

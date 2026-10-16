@@ -42,9 +42,17 @@ class PublishingTests(unittest.TestCase):
 
     def test_snap_preserves_desktop_source(self):
         recipe = (ROOT.parent / 'snap/snapcraft.yaml').read_text(encoding='utf-8')
-        result = snap.replace_once(recipe, 'source', 'https://example.com/new.tar.gz', r'https://github\.com/appipinopi/tickreel/releases/download/\S+')
+        result = snap.pin_recipe(recipe, '1.0.1', 'https://example.com/new.tar.gz', 'a' * 64)
         self.assertIn('source: snap/gui', result)
         self.assertIn('source: https://example.com/new.tar.gz', result)
+        self.assertEqual(result.count('source-checksum:'), 1)
+        self.assertIn('source-checksum: sha256/' + 'a' * 64, result)
+
+    def test_snap_replaces_existing_checksum(self):
+        recipe = "version: '1.0.0'\nparts:\n  app:\n    source: https://github.com/appipinopi/tickreel/releases/download/v1.0.0/old.tar.gz\n    source-checksum: sha256/old\n"
+        result = snap.pin_recipe(recipe, '1.0.1', 'https://example.com/new.tar.gz', 'b' * 64)
+        self.assertEqual(result.count('source-checksum:'), 1)
+        self.assertNotIn('sha256/old', result)
 
 
 if __name__ == '__main__':

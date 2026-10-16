@@ -1,12 +1,14 @@
 name: tickreel
 title: Tickreel
-version: '1.0.0'
+version: '1.0.1'
 summary: Turn your daily desktop work into a timelapse
 description: |
   Record your drawing or development workflow locally, then create a timelapse
   with visual captions, your own voice narration, music and work statistics.
   Supports multiple monitors and weekly/monthly compilations.
-  This initial Linux version supports X11 sessions. Wayland capture is not supported.
+  Supports X11 and Wayland capture through ScreenCast Portal and PipeWire.
+  Wayland requires a desktop ScreenCast portal backend. Per-app redaction
+  and idle detection are available on X11 only.
   Microphone recording requires connecting the audio-record interface.
 base: core24
 grade: devel
@@ -18,14 +20,14 @@ apps:
     command: bin/tickreel-rust
     extensions: [gnome]
     desktop: usr/share/applications/tickreel.desktop
-    plugs: [x11, audio-playback, audio-record, network, home, screen-inhibit-control]
+    plugs: [x11, wayland, audio-playback, audio-record, network, home, screen-inhibit-control]
     environment:
       TICKREEL_FFMPEG: $SNAP/bin/ffmpeg
 parts:
   tickreel:
     plugin: dump
-    source: https://github.com/appipinopi/tickreel/releases/download/v1.0.0/Tickreel-1.0.0-linux-x86_64.tar.gz
-    source-checksum: sha256/0d840ff9940cf96782aef3e3c13c332d82f1239480d4466f0ec1b4b7c1fd52fb
+    # Prepare this tested payload with scripts/build-unix.sh before snapcraft.
+    source: dist/Tickreel-linux-x86_64
     override-build: |
       binary="$(find "$CRAFT_PART_SRC" -type f -name tickreel -print -quit)"
       test -n "$binary"
