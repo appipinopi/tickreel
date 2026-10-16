@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 import tempfile
 import time
+from PIL import Image
 
 runtime, plugin = (Path(arg).resolve() for arg in sys.argv[1:])
 os.chdir(runtime / 'bin' / '64bit')
@@ -41,6 +42,18 @@ get_property = bind('obs_properties_get', P, P, S)
 click = bind('obs_property_button_clicked', B, P, P)
 destroy_properties = bind('obs_properties_destroy', None, P)
 get_description = bind('obs_property_description', S, P)
+RenderCallback = c.CFUNCTYPE(None, P, U, U)
+add_render = bind('obs_add_main_render_callback', None, RenderCallback, P)
+remove_render = bind('obs_remove_main_render_callback', None, RenderCallback, P)
+
+class Color(c.Structure):
+    _fields_ = [('r', c.c_float), ('g', c.c_float), ('b', c.c_float), ('a', c.c_float)]
+
+clear = bind('gs_clear', None, U, c.POINTER(Color), c.c_float, c.c_ubyte)
+test_color = Color(1.0, 0.0, 0.0, 1.0)
+@RenderCallback
+def render_test_pattern(_, width, height):
+    clear(1, c.byref(test_color), 1.0, 0)
 
 class VideoInfo(c.Structure):
     _fields_ = [('graphics_module', S), ('fps_num', U), ('fps_den', U),
@@ -57,6 +70,7 @@ with tempfile.TemporaryDirectory(prefix='tickreel-obs-test-') as temporary:
     add_data(str(runtime / 'data' / 'libobs').encode())
     video = VideoInfo(b'libobs-d3d11.dll', 30, 1, 320, 180, 320, 180, 2, 0, True, 2, 1, 4)
     assert reset_video(c.byref(video)) == 0, 'OBS D3D11 video initialization failed'
+    add_render(render_test_pattern, None)
     module = P()
     assert open_module(c.byref(module), str(plugin).encode(), str(Path(temporary)).encode()) == 0
     assert init_module(module), 'OBS rejected the plugin'
@@ -72,7 +86,9 @@ with tempfile.TemporaryDirectory(prefix='tickreel-obs-test-') as temporary:
     assert click(get_property(props, b'start'), source)
     status = get_description(get_property(props, b'status')).decode()
     assert 'Recording' in status, status
-    time.sleep(2.3)
+    time.sleep(1.3)
+    test_color.r, test_color.b = 0.0, 1.0
+    time.sleep(1.3)
     assert click(get_property(props, b'stop'), source)
     status = get_description(get_property(props, b'status')).decode()
     assert 'Saved' in status, status
@@ -83,6 +99,9 @@ with tempfile.TemporaryDirectory(prefix='tickreel-obs-test-') as temporary:
     assert record['fps'] == 15 and record['idleSpeed'] == 1
     frames = list(records[0].parent.glob('frame-*.jpg'))
     assert len(frames) == record['frames']
+    pixels = [Image.open(path).convert('RGB').getpixel((160, 90)) for path in sorted(frames)]
+    assert any(r > 180 and b < 60 for r, g, b in pixels), ('Red output was not captured', pixels)
+    assert any(b > 180 and r < 60 for r, g, b in pixels), ('Scene change to blue was not captured', pixels)
     assert len((records[0].parent / 'timeline.jsonl').read_text().splitlines()) == record['frames']
     # Source destruction must stop, drain and finalize a second active session.
     assert click(get_property(props, b'start'), source)
@@ -90,6 +109,7 @@ with tempfile.TemporaryDirectory(prefix='tickreel-obs-test-') as temporary:
     destroy_properties(props)
     release_source(source)
     release_data(settings)
+    remove_render(render_test_pattern, None)
     shutdown()
     records = list(Path(temporary).glob('obs-recordings/*/recording.json'))
     assert len(records) == 2

@@ -33,6 +33,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          python -m pip install Pillow
           gh release download 32.2.2 --repo obsproject/obs-studio --pattern OBS-Studio-32.2.2-Windows-x64.zip --dir obs-runtime
           if ($LASTEXITCODE -ne 0) { throw 'OBS download failed.' }
           Expand-Archive obs-runtime/OBS-Studio-32.2.2-Windows-x64.zip obs-runtime/unpacked
