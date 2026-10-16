@@ -753,7 +753,11 @@ impl eframe::App for Desktop {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         let snapshot = self.engine.snapshot();
         if self.refresh.elapsed() > Duration::from_secs(1) {
-            let result = self.engine.store.list();
+            let result = self
+                .engine
+                .store
+                .import_obs()
+                .and_then(|_| self.engine.store.list());
             if let Some(records) = self.result(result) {
                 self.records = records;
             }

@@ -16,9 +16,9 @@
 | macOS Intel | .app入りZIP（プレビュー） | macOS 12以降、画面収録・マイクの許可 |
 | Linux x64 / ARM64 | .deb・.rpm・tar.gz（プレビュー） | Ubuntu 24.04相当以降、X11 / Wayland、GTK 3、WebKitGTK 4.1、ALSA |
 
-ReleasesのAssetsから、自分のOS・CPUに合うパッケージを選んでください。Windowsは `Tickreel-1.0.1-windows-x64_x86.exe` が64bit / 32bit版を自動選択します。ARM64 PCは `Tickreel-1.0.1-windows-arm64.exe` を使ってください。インストール不要のCPU別ZIPも用意しています。ZIPは展開して `Tickreel.exe` を起動します。macOSは展開した `Tickreel.app` をApplicationsへ移動します。Linuxは展開先の `tickreel` を実行します。同梱のFFmpegをアプリと同じ場所に置いたまま使ってください。
+ReleasesのAssetsから、自分のOS・CPUに合うパッケージを選んでください。Windowsは `Tickreel-1.0.2-windows-x64_x86.exe` が64bit / 32bit版を自動選択します。ARM64 PCは `Tickreel-1.0.2-windows-arm64.exe` を使ってください。インストール不要のCPU別ZIPも用意しています。ZIPは展開して `Tickreel.exe` を起動します。macOSは展開した `Tickreel.app` をApplicationsへ移動します。Linuxは展開先の `tickreel` を実行します。同梱のFFmpegをアプリと同じ場所に置いたまま使ってください。
 
-Linuxの.debは `sudo apt install ./Tickreel-1.0.1-linux-amd64.deb`（ARM64は `arm64.deb`）、.rpmは `sudo dnf install ./Tickreel-1.0.1-linux-x86_64.rpm`（ARM64は `aarch64.rpm`）で導入します。アプリはメニューまたは `tickreel` コマンドから起動できます。.rpmはglibc 2.39以降とGTK 3 / WebKitGTK 4.1を提供する環境向けで、各ディストリビューションでの実機検証は継続中です。
+Linuxの.debは `sudo apt install ./Tickreel-1.0.2-linux-amd64.deb`（ARM64は `arm64.deb`）、.rpmは `sudo dnf install ./Tickreel-1.0.2-linux-x86_64.rpm`（ARM64は `aarch64.rpm`）で導入します。アプリはメニューまたは `tickreel` コマンドから起動できます。.rpmはglibc 2.39以降とGTK 3 / WebKitGTK 4.1を提供する環境向けで、各ディストリビューションでの実機検証は継続中です。
 
 `*-portable.exe` は更新用のアプリ本体です。初回はインストーラーまたはZIPを使ってください。Windowsの旧v1.0.0を使っている場合は、今回だけ新しい配布物で入れ替えてください。記録データは引き継ぎます。
 
@@ -26,7 +26,13 @@ macOS版はAppleによる公証を行っていないプレビュー版です。m
 
 Microsoft Store・Snap Storeへの配布は準備中です。Snap名 `tickreel` は登録済みです。試作SnapはGitHub Releasesから取得できますが、Snap Storeへのパッケージ公開はまだ行っていません。
 
-## できること
+## OBSプラグイン版（v1.0.2）
+
+Windows x64・OBS Studio 31以降向けに `Tickreel-OBS-1.0.2-windows-x64.zip` を追加しました。OBSの「ソース」に **Tickreel Timelapse** を追加し、プロパティからOBSの最終出力をタイムラプス記録できます。停止すると本体v1.0.2のライブラリへ自動で取り込み、テロップ・BGMの編集と書き出しができます。OBSの配信・通常録画を開始する必要はありません。
+
+[OBS版の導入・使い方](obs-plugin/README.md)。macOS・Linux・ARM64ネイティブOBS向けのプラグイン配布物は今回含みません。
+
+## 本体でできること
 
 - **ワンクリック生成**：一日の記録をタイムラプスへ。
 - **1分 → 約4秒**：15倍速をワンクリックで設定（1秒間隔・15fps・無操作の追加早送りなし）。

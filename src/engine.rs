@@ -90,6 +90,7 @@ impl Engine {
             .open(store.root.parent().unwrap().join("tickreel.lock"))?;
         lock.try_lock_exclusive()
             .context("Rust版Tickreelはすでに起動しています。既存のウィンドウを開いてください。")?;
+        store.import_obs()?;
         for mut record in store.list()? {
             if ["recording", "paused"].contains(&record.status.as_str()) {
                 record.status = "interrupted".into();

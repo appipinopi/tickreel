@@ -50,6 +50,35 @@ impl Store {
         output.sort_by(|a, b| b.started_at.cmp(&a.started_at));
         Ok(output)
     }
+    /// OBS writes to a separate inbox so desktop crash recovery cannot mark a
+    /// live OBS capture as interrupted. Only finalized sessions are moved in.
+    pub fn import_obs(&self) -> Result<usize> {
+        let Some(parent) = self.root.parent() else {
+            return Ok(0);
+        };
+        let inbox = parent.join("obs-recordings");
+        if inbox == self.root || !inbox.is_dir() {
+            return Ok(0);
+        }
+        let source = Store::new(inbox)?;
+        let mut imported = 0;
+        for record in source.list()? {
+            if !["ready", "interrupted"].contains(&record.status.as_str())
+                || record.ended_at.is_none()
+                || record.frames == 0
+            {
+                continue;
+            }
+            let from = source.directory(&record.id)?;
+            let to = self.directory(&record.id)?;
+            if to.exists() || fs::symlink_metadata(&from)?.file_type().is_symlink() {
+                continue;
+            }
+            fs::rename(from, to)?;
+            imported += 1;
+        }
+        Ok(imported)
+    }
     pub fn frame(&self, record: &mut Recording, image: &RgbImage, idle: bool) -> Result<()> {
         let directory = self.directory(&record.id)?;
         let mut jpeg = vec![];
@@ -153,6 +182,26 @@ impl Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn obs_inbox_imports_only_finalized_sessions_without_copying() {
+        let temp = tempfile::tempdir().unwrap();
+        let inbox = Store::new(temp.path().join("obs-recordings")).unwrap();
+        let desktop = Store::new(temp.path().join("recordings")).unwrap();
+        let mut record = Recording::default();
+        inbox.save(&record).unwrap();
+        inbox
+            .frame(&mut record, &RgbImage::new(8, 8), false)
+            .unwrap();
+        assert_eq!(desktop.import_obs().unwrap(), 0);
+        record.status = "ready".into();
+        record.ended_at = Some(chrono::Utc::now().to_rfc3339());
+        inbox.save(&record).unwrap();
+        assert_eq!(desktop.import_obs().unwrap(), 1);
+        assert_eq!(desktop.import_obs().unwrap(), 0);
+        assert!(!inbox.directory(&record.id).unwrap().exists());
+        assert_eq!(desktop.get(&record.id).unwrap().frames, 1);
+        assert_eq!(desktop.timeline(&record.id).unwrap().len(), 1);
+    }
     #[test]
     fn storage_recovery_and_safe_delete() {
         let temp = tempfile::tempdir().unwrap();

@@ -1,0 +1,67 @@
+name: Build and verify OBS plugin
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release to attach OBS packages to (empty = artifacts only)'
+        required: false
+        default: ''
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and test plugin
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo test --locked --manifest-path obs-plugin/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin tests failed.' }
+          cargo build --release --locked --manifest-path obs-plugin/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin build failed.' }
+      - name: Verify against real OBS Studio
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download 32.2.2 --repo obsproject/obs-studio --pattern OBS-Studio-32.2.2-Windows-x64.zip --dir obs-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'OBS download failed.' }
+          Expand-Archive obs-runtime/OBS-Studio-32.2.2-Windows-x64.zip obs-runtime/unpacked
+          $taskMeta = cargo metadata --no-deps --format-version 1 --manifest-path obs-plugin/Cargo.toml | ConvertFrom-Json
+          python scripts/test-obs-plugin.py obs-runtime/unpacked "$($taskMeta.target_directory)/release/tickreel_obs.dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Real libobs integration failed.' }
+      - name: Package
+        shell: pwsh
+        run: |
+          $taskMeta = cargo metadata --no-deps --format-version 1 --manifest-path obs-plugin/Cargo.toml | ConvertFrom-Json
+          python scripts/package-obs-plugin.py --binary "$($taskMeta.target_directory)/release/tickreel_obs.dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin packaging failed.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tickreel-OBS-windows-x64
+          path: dist/Tickreel-OBS-*
+          if-no-files-found: error
+      - name: Attach OBS packages to release
+        if: github.ref_type == 'tag' || inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          $taskVersion = (Get-Content obs-plugin/Cargo.toml | Select-String '^version = "([^"]+)"').Matches.Groups[1].Value
+          if ($env:RELEASE_TAG -ne "v$taskVersion") { throw 'Tag and plugin version differ.' }
+          gh release view $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) { throw 'Release not found.' }
+          Get-ChildItem dist/Tickreel-OBS-* | ForEach-Object {
+            gh release upload $env:RELEASE_TAG $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
+          }

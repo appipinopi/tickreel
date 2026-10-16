@@ -229,6 +229,7 @@ impl Backend {
             }
             "state" => {
                 let snapshot = self.engine.snapshot();
+                self.engine.store.import_obs()?;
                 let records = self.engine.store.list()?;
                 let export_ids = self.export_ids.lock().unwrap().clone();
                 Ok(
