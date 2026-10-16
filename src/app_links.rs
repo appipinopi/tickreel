@@ -1,7 +1,34 @@
-use app_signature::Signature;
-use std::sync::OnceLock;
+use app_signature::{LiveSignature, Signature};
+use std::sync::{Mutex, OnceLock};
 
-pub fn signature() -> &'static Signature {
+fn state() -> &'static Mutex<Option<LiveSignature>> {
+    static STATE: OnceLock<Mutex<Option<LiveSignature>>> = OnceLock::new();
+    STATE.get_or_init(|| Mutex::new(None))
+}
+pub fn start() {
+    let mut state = state().lock().unwrap();
+    if state.is_none() {
+        let cache = dirs::cache_dir()
+            .unwrap_or_else(std::env::temp_dir)
+            .join("TickreelRust/app-signature/creator.json");
+        *state = Some(LiveSignature::new(embedded().clone(), cache));
+    }
+}
+#[allow(dead_code)]
+pub fn shutdown() {
+    let previous = state().lock().unwrap().take();
+    drop(previous);
+}
+pub fn signature() -> Signature {
+    state()
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(LiveSignature::snapshot)
+        .unwrap_or_else(|| embedded().clone())
+}
+
+fn embedded() -> &'static Signature {
     static SIGNATURE: OnceLock<Signature> = OnceLock::new();
     SIGNATURE.get_or_init(|| {
         Signature::from_json(include_str!("../assets/app-signature.json"))

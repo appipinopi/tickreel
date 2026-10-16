@@ -25,6 +25,9 @@ mod web_ui;
 
 fn main() {
     native::set_dpi();
+    if !std::env::args().any(|arg| arg.contains("test")) {
+        app_links::start();
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|arg| arg == "--wayland-self-test") {
         if let Err(error) = wayland::self_test() {

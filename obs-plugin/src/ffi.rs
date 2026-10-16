@@ -8,6 +8,41 @@ use std::ffi::{c_char, c_void};
 pub type Ptr = *mut c_void;
 pub type Button = unsafe extern "C" fn(Ptr, Ptr, Ptr) -> bool;
 pub type VideoCallback = unsafe extern "C" fn(Ptr, *mut VideoData);
+pub type FrontendCallback = unsafe extern "C" fn(u32, Ptr);
+
+pub const RECORDING_STARTED: u32 = 5;
+pub const RECORDING_STOPPED: u32 = 7;
+pub const RECORDING_PAUSED: u32 = 27;
+pub const RECORDING_UNPAUSED: u32 = 28;
+
+pub struct FrontendApi {
+    pub add_event: unsafe extern "C" fn(FrontendCallback, Ptr),
+    pub remove_event: unsafe extern "C" fn(FrontendCallback, Ptr),
+    pub recording_active: unsafe extern "C" fn() -> bool,
+    _library: Library,
+}
+impl FrontendApi {
+    pub unsafe fn load() -> anyhow::Result<Self> {
+        #[cfg(windows)]
+        let library = unsafe { Library::new("obs-frontend-api.dll")? };
+        #[cfg(target_os = "linux")]
+        let library = unsafe { Library::new("libobs-frontend-api.so.0")? };
+        #[cfg(target_os = "macos")]
+        let library = unsafe { Library::new("@rpath/libobs-frontend-api.dylib")? };
+        let main_window: unsafe extern "C" fn() -> Ptr =
+            unsafe { *library.get(b"obs_frontend_get_main_window\0")? };
+        anyhow::ensure!(
+            !unsafe { main_window() }.is_null(),
+            "OBS frontend is not initialized"
+        );
+        Ok(Self {
+            add_event: unsafe { *library.get(b"obs_frontend_add_event_callback\0")? },
+            remove_event: unsafe { *library.get(b"obs_frontend_remove_event_callback\0")? },
+            recording_active: unsafe { *library.get(b"obs_frontend_recording_active\0")? },
+            _library: library,
+        })
+    }
+}
 
 #[repr(C)]
 pub struct SourceInfo {

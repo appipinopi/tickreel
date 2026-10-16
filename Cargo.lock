@@ -126,12 +126,14 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "app-signature"
-version = "0.1.1"
-source = "git+https://github.com/appipinopi/app-signature?rev=3e1017ce51e848479eb76f8acd7c8a186f810593#3e1017ce51e848479eb76f8acd7c8a186f810593"
+version = "0.2.0"
+source = "git+https://github.com/appipinopi/app-signature?rev=1562dfd38894c5b13a6fcd00b500e5b7712f8053#1562dfd38894c5b13a6fcd00b500e5b7712f8053"
 dependencies = [
  "anyhow",
+ "reqwest",
  "serde",
  "serde_json",
+ "tempfile",
  "url",
  "webbrowser",
 ]

@@ -240,6 +240,16 @@ window.appSignatureReady = (async () => {
   return mountSignature($('app-signature'), { signature, onOpenLink: id => api.openPublicLink(id), onError: error => notify(error.message) });
 })();
 window.appSignatureReady.catch(error => notify(error.message));
+let signatureConfig = '';
+setInterval(async () => {
+  try {
+    const signature = await api.publicLinks(), serialized = JSON.stringify(signature);
+    if (serialized === signatureConfig) return;
+    const { mountSignature } = await import('./app-signature.js');
+    mountSignature($('app-signature'), { signature, onOpenLink: id => api.openPublicLink(id), onError: error => notify(error.message) });
+    signatureConfig = serialized;
+  } catch { /* Keep the last displayed links when the backend is unavailable. */ }
+}, 60000);
 setInterval(update, 1500);
 
 let updateStatus=null;

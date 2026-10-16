@@ -5,7 +5,7 @@ edition = "2024"
 description = "Local desktop work timelapse recorder"
 
 [dependencies]
-app-signature = { git = "https://github.com/appipinopi/app-signature", rev = "3e1017ce51e848479eb76f8acd7c8a186f810593" }
+app-signature = { git = "https://github.com/appipinopi/app-signature", rev = "1562dfd38894c5b13a6fcd00b500e5b7712f8053" }
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 cpal = "0.16"

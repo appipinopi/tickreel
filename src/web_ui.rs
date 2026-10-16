@@ -224,7 +224,7 @@ impl Backend {
                     .and_then(Value::as_str)
                     .context("リンクを選択してください。")?;
                 let signature = crate::app_links::signature();
-                let url = signature.resolve(id)?;
+                let url = signature.resolve(id)?.to_owned();
                 if !self.qa {
                     signature.open(id)?;
                 }

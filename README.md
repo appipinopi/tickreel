@@ -30,7 +30,7 @@ Microsoft Store・Snap Storeへの配布は準備中です。Snap名 `tickreel` 
 
 ## OBSプラグイン版（v1.0.2）
 
-Windows x64・OBS Studio 31以降向けに `Tickreel-OBS-1.0.2-windows-x64.zip` を追加しました。OBSの「ソース」に **Tickreel Timelapse** を追加し、プロパティからOBSの最終出力をタイムラプス記録できます。停止すると本体v1.0.2のライブラリへ自動で取り込み、テロップ・BGMの編集と書き出しができます。OBSの配信・通常録画を開始する必要はありません。
+Windows x64・OBS Studio 31以降向けに `Tickreel-OBS-1.0.2-windows-x64.zip` を追加しました。OBSの「ソース」に **Tickreel Timelapse** を追加し、プロパティからOBSの最終出力をタイムラプス記録できます。停止すると本体v1.0.2のライブラリへ自動で取り込み、テロップ・BGMの編集と書き出しができます。OBSの「録画開始・停止」に自動連動し、画像やロゴは映像に追加しません。
 
 [OBS版の導入・使い方](obs-plugin/README.md)。macOS・Linux・ARM64ネイティブOBS向けのプラグイン配布物は今回含みません。
 

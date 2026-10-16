@@ -29,6 +29,7 @@ use std::{
 use store::Store;
 
 static API: OnceLock<Api> = OnceLock::new();
+static FRONTEND: OnceLock<ffi::FrontendApi> = OnceLock::new();
 fn api() -> &'static Api {
     API.get().expect("OBS API initialized before callbacks")
 }
@@ -47,6 +48,7 @@ struct Capture {
     worker: Option<JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
     running: Arc<AtomicBool>,
+    paused: AtomicBool,
     next: Mutex<Instant>,
     interval: Duration,
     width: u32,
@@ -139,6 +141,7 @@ impl Capture {
             worker: Some(worker),
             error,
             running,
+            paused: AtomicBool::new(false),
             next: Mutex::new(Instant::now()),
             interval: Duration::from_secs(interval as u64),
             width,
@@ -163,7 +166,10 @@ impl Drop for Capture {
 // Copy on the video thread; bounded queue, JPEG encoding and disk I/O on the writer.
 unsafe extern "C" fn video(data: Ptr, frame: *mut VideoData) {
     let capture = &*(data as *const Capture);
-    if !capture.running.load(Ordering::Acquire) || frame.is_null() {
+    if !capture.running.load(Ordering::Acquire)
+        || capture.paused.load(Ordering::Acquire)
+        || frame.is_null()
+    {
         return;
     }
     let Ok(mut next) = capture.next.try_lock() else {
@@ -225,6 +231,12 @@ unsafe extern "C" fn create(settings: Ptr, _: Ptr) -> Ptr {
     });
     let data = Box::into_raw(controller) as Ptr;
     update(data, settings);
+    if let Some(frontend) = FRONTEND.get() {
+        (frontend.add_event)(frontend_event, data);
+        if (frontend.recording_active)() {
+            start_capture(&*(data as *const Controller));
+        }
+    }
     data
 }
 unsafe extern "C" fn update(data: Ptr, settings: Ptr) {
@@ -257,6 +269,9 @@ unsafe fn stop(controller: &Controller) -> Option<String> {
 }
 unsafe extern "C" fn destroy(data: Ptr) {
     if !data.is_null() {
+        if let Some(frontend) = FRONTEND.get() {
+            (frontend.remove_event)(frontend_event, data);
+        }
         let controller = Box::from_raw(data as *mut Controller);
         stop(&controller);
     }
@@ -268,11 +283,17 @@ unsafe extern "C" fn defaults(settings: Ptr) {
 }
 
 unsafe fn status(properties: Ptr, text: &str) {
+    if properties.is_null() {
+        return;
+    }
     let text = CString::new(text.replace('\0', "")).unwrap();
     let property = (api().obs_properties_get)(properties, c"status".as_ptr());
     (api().obs_property_set_description)(property, text.as_ptr());
 }
 unsafe fn controls(properties: Ptr, recording: bool) {
+    if properties.is_null() {
+        return;
+    }
     for key in [c"title", c"interval", c"fps", c"start"] {
         (api().obs_property_set_enabled)(
             (api().obs_properties_get)(properties, key.as_ptr()),
@@ -289,9 +310,15 @@ unsafe extern "C" fn start_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
         return false;
     }
     let controller = &*(data as *const Controller);
+    start_capture(controller);
+    status(properties, &controller.message.lock().unwrap());
+    controls(properties, controller.capture.lock().unwrap().is_some());
+    true
+}
+unsafe fn start_capture(controller: &Controller) {
     let mut slot = controller.capture.lock().unwrap();
     if slot.is_some() {
-        return false;
+        return;
     }
     let result = (|| -> Result<Box<Capture>> {
         let output = (api().obs_get_video)();
@@ -319,15 +346,34 @@ unsafe extern "C" fn start_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
             *slot = Some(capture);
             (api().obs_add_raw_video_callback)(&conversion, video, ptr);
             *controller.message.lock().unwrap() = "Recording OBS Program / 記録中".into();
-            status(properties, &controller.message.lock().unwrap());
-            controls(properties, true);
         }
         Err(error) => {
             *controller.message.lock().unwrap() = format!("Error: {error:#}");
-            status(properties, &controller.message.lock().unwrap());
         }
     }
-    true
+}
+unsafe extern "C" fn frontend_event(event: u32, data: Ptr) {
+    if data.is_null() {
+        return;
+    }
+    let controller = &*(data as *const Controller);
+    match event {
+        ffi::RECORDING_STARTED => start_capture(controller),
+        ffi::RECORDING_STOPPED => {
+            let error = stop(controller);
+            *controller.message.lock().unwrap() = error.unwrap_or_else(|| {
+                "Saved. Ready for the next OBS recording. / 保存完了・次の録画を待機".into()
+            });
+        }
+        ffi::RECORDING_PAUSED | ffi::RECORDING_UNPAUSED => {
+            if let Some(capture) = controller.capture.lock().unwrap().as_ref() {
+                capture
+                    .paused
+                    .store(event == ffi::RECORDING_PAUSED, Ordering::Release);
+            }
+        }
+        _ => {}
+    }
 }
 unsafe extern "C" fn stop_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
     if data.is_null() {
@@ -368,7 +414,7 @@ unsafe extern "C" fn works_button(properties: Ptr, _: Ptr, data: Ptr) -> bool {
 }
 unsafe extern "C" fn properties(data: Ptr) -> Ptr {
     let props = (api().obs_properties_create)();
-    (api().obs_properties_add_text)(props, c"info".as_ptr(), c"Records the final OBS Program, including scene changes. Independent of OBS streaming/recording. / OBSの最終出力を記録します。".as_ptr(), 3);
+    (api().obs_properties_add_text)(props, c"info".as_ptr(), c"OBSの「録画開始・停止」に自動連動します。このソース自体は画像を表示しません。画面・ウィンドウなどの映像ソースを別途追加してください。".as_ptr(), 3);
     (api().obs_properties_add_text)(props, c"title".as_ptr(), c"Title / タイトル".as_ptr(), 0);
     for (key, label, values) in [
         (
@@ -465,6 +511,12 @@ pub unsafe extern "C" fn obs_module_load() -> bool {
         };
         let _ = API.set(loaded);
     }
+    if FRONTEND.get().is_none() {
+        if let Ok(frontend) = ffi::FrontendApi::load() {
+            let _ = FRONTEND.set(frontend);
+        }
+    }
+    app_links::start();
     let source = SourceInfo {
         id: c"tickreel_timelapse".as_ptr(),
         kind: 0,
@@ -480,6 +532,10 @@ pub unsafe extern "C" fn obs_module_load() -> bool {
     };
     (api().obs_register_source_s)(&source, std::mem::size_of::<SourceInfo>());
     true
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn obs_module_unload() {
+    app_links::shutdown();
 }
 
 #[cfg(test)]
