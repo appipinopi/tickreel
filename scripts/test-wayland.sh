@@ -38,6 +38,13 @@ printf '[screencast]\nchooser_type=none\noutput_name=HEADLESS-1\nmax_fps=5\n' > 
 printf 'xwayland disable\noutput * mode 640x480\noutput * bg "#336699" solid_color\n' > "$XDG_RUNTIME_DIR/sway.conf"
 pids=()
 cleanup() {
+  status=$?
+  if [[ $status != 0 ]]; then
+    for logfile in "$XDG_RUNTIME_DIR"/*.log; do
+      printf '\n%s\n' "$logfile"
+      cat "$logfile"
+    done
+  fi
   for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done
   wait || true
 }
@@ -67,7 +74,7 @@ pids+=("$!")
 pids+=("$!")
 # Let D-Bus activate the frontend portal after the configured backend owns its
 # name; starting it concurrently with activation can create two instances.
-timeout 10 gdbus wait --session org.freedesktop.impl.portal.desktop.wlr
+timeout 20 gdbus wait --session org.freedesktop.impl.portal.desktop.wlr
 for ((i=0;i<100;i++)); do
   if gdbus call --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop \
     --method org.freedesktop.DBus.Properties.Get org.freedesktop.portal.ScreenCast AvailableSourceTypes >/dev/null 2>&1; then break; fi
