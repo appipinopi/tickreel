@@ -45,7 +45,7 @@ jobs:
           # its upstream release commit. This changes the test fixture only.
           git clone https://github.com/emersion/xdg-desktop-portal-wlr.git "$RUNNER_TEMP/tickreel-xdpw"
           git -C "$RUNNER_TEMP/tickreel-xdpw" checkout 083aed357d5c8166aed132a76796de6847605289
-          meson setup "$RUNNER_TEMP/tickreel-xdpw/build" "$RUNNER_TEMP/tickreel-xdpw" -Dman=disabled -Dsystemd=disabled
+          meson setup "$RUNNER_TEMP/tickreel-xdpw/build" "$RUNNER_TEMP/tickreel-xdpw" -Dman-pages=disabled -Dsystemd=disabled
           ninja -C "$RUNNER_TEMP/tickreel-xdpw/build"
           sudo install -m755 "$RUNNER_TEMP/tickreel-xdpw/build/xdg-desktop-portal-wlr" /usr/libexec/xdg-desktop-portal-wlr
       - name: Test
