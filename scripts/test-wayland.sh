@@ -8,11 +8,19 @@ if [[ ${TICKREEL_WAYLAND_TEST_CHILD:-} != 1 ]]; then
   runtime="$(mktemp -d /tmp/tickreel-wayland.XXXXXXXX)"
   chmod 700 "$runtime"
   trap 'rm -rf -- "$runtime"' EXIT
+  # Hosted runners can keep their checkout below a private home directory.
+  # Copy both inputs into the isolated runtime before dropping privileges.
+  cp "$script" "$runtime/test-wayland.sh"
+  cp "$binary" "$runtime/tickreel-test"
+  chmod 755 "$runtime/tickreel-test"
+  script="$runtime/test-wayland.sh"
+  binary="$runtime/tickreel-test"
   runner=()
   if [[ $(id -u) == 0 ]]; then
     chown nobody "$runtime"
     runner=(runuser -u nobody --)
   fi
+  cd "$runtime"
   "${runner[@]}" env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
     XDG_RUNTIME_DIR="$runtime" HOME="$runtime" \
     TICKREEL_WAYLAND_TEST_CHILD=1 \
