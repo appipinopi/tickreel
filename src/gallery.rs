@@ -79,6 +79,7 @@ pub fn run(qa: bool) -> Result<()> {
     #[cfg(target_os = "linux")]
     let webview = {
         use tao::platform::unix::WindowExtUnix;
+        use wry::WebViewBuilderExtUnix;
         builder.build_gtk(window.default_vbox().context("GTK window is unavailable")?)?
     };
     let opened = Instant::now();
