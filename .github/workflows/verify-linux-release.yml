@@ -40,4 +40,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
-        run: gh release upload "$RELEASE_TAG" packages/*.tar.gz packages/*.deb packages/*.rpm
+        run: |
+          for file in packages/*.tar.gz packages/*.deb packages/*.rpm; do
+            if gh release view "$RELEASE_TAG" --json assets --jq '[.assets[].name] | index("'"$(basename "$file")"'") != null' | grep -q true; then
+              echo "Preserving existing asset: $(basename "$file")"
+            else
+              gh release upload "$RELEASE_TAG" "$file"
+            fi
+          done
