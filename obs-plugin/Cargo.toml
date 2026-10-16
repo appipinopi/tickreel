@@ -9,7 +9,7 @@ description = "OBS Studio timelapse recorder for Tickreel"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-app-signature = { git = "https://github.com/appipinopi/app-signature", rev = "ddabe4b321247971c8eeba6ec31e4bf66fdf19de" }
+app-signature = { git = "https://github.com/appipinopi/app-signature", rev = "b05a7b076f31aa47dcc7200ca2b898b7016670fa" }
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "6"
