@@ -5,6 +5,7 @@
 <a href="https://snapcraft.io/tickreel">
   <img alt="tickreel" src="https://snapcraft.io/tickreel/badge.svg" />
 </a>
+
 <script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
 <ms-store-badge productid="9P6Z0TV3JVRR" theme="auto" language="ja-jp"></ms-store-badge>
 
