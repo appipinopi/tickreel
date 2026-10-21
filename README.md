@@ -5,6 +5,8 @@
 <a href="https://snapcraft.io/tickreel">
   <img alt="tickreel" src="https://snapcraft.io/tickreel/badge.svg" />
 </a>
+<script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
+<ms-store-badge productid="9P6Z0TV3JVRR" theme="auto" language="ja-jp"></ms-store-badge>
 
 お絵描き、プログラミング、毎日の制作作業を記録し、テロップ・自分の声・BGMを添えた動画にするデスクトップアプリです。Rustで動作し、画面と音声は自分のPCに保存します。
 
