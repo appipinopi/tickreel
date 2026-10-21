@@ -1,7 +1,7 @@
 # Tickreel
 
 **一日の積み重ねを、一本のタイムラプスに。**
-[![Get it from the Snap Store](https://snapcraft.io/en/dark/install.svg)](https://snapcraft.io/tickreel)
+[![Snap Store から入手ください](https://snapcraft.io/jp/light/install.svg)](https://snapcraft.io/tickreel)
 お絵描き、プログラミング、毎日の制作作業を記録し、テロップ・自分の声・BGMを添えた動画にするデスクトップアプリです。Rustで動作し、画面と音声は自分のPCに保存します。
 
 [ダウンロード](https://github.com/appipinopi/tickreel/releases/latest) · [不具合報告・要望](https://github.com/appipinopi/tickreel/issues) · [プライバシー](docs/privacy.md)
