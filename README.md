@@ -3,10 +3,12 @@
 **一日の積み重ねを、一本のタイムラプスに。**
 
 <a href="https://snapcraft.io/tickreel">
-  <img alt="tickreel" src="https://snapcraft.io/tickreel/badge.svg" />
+   <img alt="Get it from the Snap Store" src=https://snapcraft.io/en/light/install.svg width="200">
 </a>
-<script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
-<ms-store-badge productid="9wzdncrfhvjl" productname="Placeholder" window-mode="direct" language="he" cid="abc123" theme="light"></ms-store-badge>
+<a href="https://apps.microsoft.com/detail/9P6Z0TV3JVRR?mode=direct">
+	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="200">
+</a>
+
 
 お絵描き、プログラミング、毎日の制作作業を記録し、テロップ・自分の声・BGMを添えた動画にするデスクトップアプリです。Rustで動作し、画面と音声は自分のPCに保存します。
 
